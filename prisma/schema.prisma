@@ -1,0 +1,148 @@
+// Prisma schema — CMS de Unidades / Locais de Atendimento (protótipo)
+// Governo do Estado de Mato Grosso do Sul
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Municipio {
+  id         Int    @id @default(autoincrement())
+  nome       String
+  uf         String
+  slug       String @unique
+  codigoIbge String?
+
+  enderecos Endereco[]
+}
+
+model Orgao {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  sigla         String
+  slug          String   @unique
+  site          String?
+  orgaoExterno  Boolean  @default(false)
+  ativo         Boolean  @default(true)
+
+  pontosAtendimento PontoAtendimento[]
+}
+
+model TipoPonto {
+  id            Int     @id @default(autoincrement())
+  nome          String
+  slug          String  @unique
+  exigeEndereco Boolean @default(true)
+
+  pontosAtendimento PontoAtendimento[]
+}
+
+model PontoAtendimento {
+  id                    Int      @id @default(autoincrement())
+  orgaoId               Int
+  tipoPontoId           Int
+  nome                  String
+  slug                  String   @unique
+  identificadorExterno  String?
+  ativo                 Boolean  @default(true)
+  criadoEm              DateTime @default(now())
+  atualizadoEm          DateTime @updatedAt
+
+  orgao      Orgao     @relation(fields: [orgaoId], references: [id])
+  tipoPonto  TipoPonto @relation(fields: [tipoPontoId], references: [id])
+
+  endereco     Endereco?
+  responsaveis PontoResponsavel[]
+  canais       CanalContato[]
+  horarios     Horario[]
+  servicos     ServicoUnidade[]
+}
+
+model Endereco {
+  id                  Int     @id @default(autoincrement())
+  pontoAtendimentoId  Int     @unique
+  municipioId         Int
+  logradouro          String
+  numero              String
+  complemento         String?
+  bairro              String
+  cep                 String
+  iframeMapa          String
+  urlMapa             String?
+  latitude            Float?
+  longitude           Float?
+
+  pontoAtendimento PontoAtendimento @relation(fields: [pontoAtendimentoId], references: [id], onDelete: Cascade)
+  municipio        Municipio        @relation(fields: [municipioId], references: [id])
+}
+
+model Pessoa {
+  id   Int    @id @default(autoincrement())
+  nome String
+
+  responsavelDe PontoResponsavel[]
+}
+
+model PontoResponsavel {
+  pontoAtendimentoId Int
+  pessoaId           Int
+  cargo              String?
+
+  pontoAtendimento PontoAtendimento @relation(fields: [pontoAtendimentoId], references: [id], onDelete: Cascade)
+  pessoa           Pessoa           @relation(fields: [pessoaId], references: [id])
+
+  @@id([pontoAtendimentoId, pessoaId])
+}
+
+model CanalContato {
+  id                 Int    @id @default(autoincrement())
+  pontoAtendimentoId Int
+  tipo               String
+  rotulo             String
+  valor              String
+
+  pontoAtendimento PontoAtendimento @relation(fields: [pontoAtendimentoId], references: [id], onDelete: Cascade)
+}
+
+model TipoHorario {
+  id   Int    @id @default(autoincrement())
+  nome String
+
+  horarios Horario[]
+}
+
+model Horario {
+  id                 Int     @id @default(autoincrement())
+  pontoAtendimentoId Int
+  tipoHorarioId      Int
+  diaSemana          Int
+  inicio             String
+  fim                String
+  periodo            String?
+
+  pontoAtendimento PontoAtendimento @relation(fields: [pontoAtendimentoId], references: [id], onDelete: Cascade)
+  tipoHorario      TipoHorario      @relation(fields: [tipoHorarioId], references: [id])
+}
+
+model Servico {
+  id   Int    @id @default(autoincrement())
+  nome String
+
+  unidades ServicoUnidade[]
+}
+
+model ServicoUnidade {
+  pontoAtendimentoId Int
+  servicoId          Int
+  agendamento        Boolean @default(false)
+  atendimento        Boolean @default(false)
+
+  pontoAtendimento PontoAtendimento @relation(fields: [pontoAtendimentoId], references: [id], onDelete: Cascade)
+  servico          Servico          @relation(fields: [servicoId], references: [id])
+
+  @@id([pontoAtendimentoId, servicoId])
+}
