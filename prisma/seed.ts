@@ -97,15 +97,121 @@ async function main() {
   const [rg, certidao, procon, vacinacao, agendamentoConsultas, boletim] =
     servicos;
 
-  // ---------- Pessoas (responsáveis) ----------
-  const nomesPessoas = ["Maria da Silva", "João Pereira", "Ana Souza"];
+  // ---------- Pessoas (responsáveis / usuários) ----------
+  const dadosPessoas = [
+    { nome: "Maria da Silva", cpf: "123.456.789-00" },
+    { nome: "João Pereira", cpf: "234.567.890-11" },
+    { nome: "Ana Souza", cpf: "345.678.901-22" },
+  ];
   const pessoas = [];
-  for (const nome of nomesPessoas) {
-    let p = await prisma.pessoa.findFirst({ where: { nome } });
-    if (!p) p = await prisma.pessoa.create({ data: { nome } });
+  for (const dados of dadosPessoas) {
+    let p = await prisma.pessoa.findFirst({ where: { nome: dados.nome } });
+    if (!p) {
+      p = await prisma.pessoa.create({ data: dados });
+    } else if (!p.cpf) {
+      p = await prisma.pessoa.update({
+        where: { id: p.id },
+        data: { cpf: dados.cpf },
+      });
+    }
     pessoas.push(p);
   }
   const [maria, joao, ana] = pessoas;
+
+  // ---------- Detalhes do órgão (contato, endereço, associações) ----------
+  await prisma.orgao.update({
+    where: { id: ses.id },
+    data: {
+      identificadorControlador: "39",
+      informacoes:
+        "<p>A Secretaria de Estado de Saúde é responsável por planejar, coordenar e executar a política estadual de saúde de Mato Grosso do Sul.</p>",
+    },
+  });
+
+  await prisma.orgaoContato.upsert({
+    where: { orgaoId: ses.id },
+    update: {},
+    create: {
+      orgaoId: ses.id,
+      telefone: "(67) 3318-1700",
+      email: "gabinete@saude.ms.gov.br",
+      whatsapp: "(67) 99900-1700",
+      instagram: "https://www.instagram.com/sesms",
+      facebook: "https://www.facebook.com/sesms",
+    },
+  });
+
+  await prisma.orgaoEndereco.upsert({
+    where: { orgaoId: ses.id },
+    update: {},
+    create: {
+      orgaoId: ses.id,
+      municipioId: campoGrande.id,
+      logradouro: "Avenida do Poeta, s/n",
+      complemento: "Bloco 7, Parque dos Poderes",
+      bairro: "Jardim Veraneio",
+      cep: "79031-902",
+      iframeMapa:
+        '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3735.0!2d-54.55!3d-20.46" width="600" height="450" style="border:0;" allowfullscreen loading="lazy"></iframe>',
+      diasSemana: "1,2,3,4,5",
+      temIntervalo: true,
+      funcInicioManha: "07:30",
+      funcFimManha: "11:30",
+      funcInicioTarde: "13:30",
+      funcFimTarde: "17:30",
+      atendInicioManha: "07:30",
+      atendFimManha: "11:30",
+      atendInicioTarde: "13:30",
+      atendFimTarde: "17:30",
+    },
+  });
+
+  const setoresSes = [
+    { sigla: "ASCOM", nome: "Assessoria de Comunicação" },
+    { sigla: "GEJUR", nome: "Gerência Jurídica" },
+    { sigla: "SUPAT", nome: "Superintendência de Atenção à Saúde" },
+    { sigla: "OUVID", nome: "Ouvidoria" },
+  ];
+  for (const setor of setoresSes) {
+    await prisma.setor.upsert({
+      where: { orgaoId_sigla: { orgaoId: ses.id, sigla: setor.sigla } },
+      update: {},
+      create: { orgaoId: ses.id, ...setor },
+    });
+  }
+
+  const gestorExistente = await prisma.gestor.findFirst({
+    where: { orgaoId: ses.id },
+  });
+  if (!gestorExistente) {
+    await prisma.gestor.create({
+      data: {
+        orgaoId: ses.id,
+        nome: "Maria da Silva",
+        biografia:
+          "<p>Graduada em Medicina, atua na gestão pública de saúde há mais de 20 anos.</p>",
+      },
+    });
+  }
+
+  await prisma.orgaoUsuario.upsert({
+    where: { orgaoId_pessoaId: { orgaoId: ses.id, pessoaId: maria.id } },
+    update: {},
+    create: { orgaoId: ses.id, pessoaId: maria.id, perfil: "Gerente" },
+  });
+
+  const siteExistente = await prisma.siteRelacionado.findFirst({
+    where: { orgaoId: ses.id },
+  });
+  if (!siteExistente) {
+    await prisma.siteRelacionado.create({
+      data: {
+        orgaoId: ses.id,
+        titulo: "Portal do Paciente",
+        link: "https://www.saude.ms.gov.br/portal-do-paciente",
+      },
+    });
+  }
 
   // ---------- Unidades de exemplo ----------
 

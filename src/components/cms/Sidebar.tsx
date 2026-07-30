@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const colecoes = [{ nome: "Unidades", href: "/cms/unidades" }];
+const colecoes = [
+  { nome: "Órgãos", href: "/cms/orgaos" },
+  { nome: "Unidades", href: "/cms/unidades" },
+];
 
 export default function Sidebar() {
   const pathname = usePathname();

@@ -17,7 +17,8 @@ model Municipio {
   slug       String @unique
   codigoIbge String?
 
-  enderecos Endereco[]
+  enderecos       Endereco[]
+  orgaoEnderecos  OrgaoEndereco[]
 }
 
 model Orgao {
@@ -26,10 +27,115 @@ model Orgao {
   sigla         String
   slug          String   @unique
   site          String?
+  informacoes   String?
   orgaoExterno  Boolean  @default(false)
   ativo         Boolean  @default(true)
+  // "Atendentes podem ser adicionados em mais de um local de atendimento?"
+  atendenteMultiLocal      Boolean @default(false)
+  ignoraRegrasAgendamento  Boolean @default(false)
+  // "Identificador no controlador" — id do órgão no sistema legado
+  identificadorControlador String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @default(now()) @updatedAt
 
   pontosAtendimento PontoAtendimento[]
+  contato           OrgaoContato?
+  endereco          OrgaoEndereco?
+  setores           Setor[]
+  gestores          Gestor[]
+  usuarios          OrgaoUsuario[]
+  sites             SiteRelacionado[]
+}
+
+model OrgaoContato {
+  id        Int     @id @default(autoincrement())
+  orgaoId   Int     @unique
+  telefone  String
+  email     String
+  whatsapp  String?
+  instagram String?
+  facebook  String?
+  twitter   String?
+  youtube   String?
+
+  orgao Orgao @relation(fields: [orgaoId], references: [id], onDelete: Cascade)
+}
+
+// Endereço + horários do órgão. Diferente de Endereco (do ponto de atendimento),
+// o AS IS trata o endereço do órgão como um único campo de texto livre e guarda
+// os horários de funcionamento e de atendimento no próprio registro.
+model OrgaoEndereco {
+  id          Int     @id @default(autoincrement())
+  orgaoId     Int     @unique
+  municipioId Int
+  logradouro  String
+  complemento String?
+  bairro      String
+  cep         String
+  iframeMapa  String
+  // dias da semana como CSV (1=Segunda ... 7=Domingo), ex: "1,2,3,4,5"
+  diasSemana   String
+  temIntervalo Boolean @default(false)
+
+  funcInicioManha String
+  funcFimManha    String?
+  funcInicioTarde String?
+  funcFimTarde    String
+
+  atendInicioManha String
+  atendFimManha    String?
+  atendInicioTarde String?
+  atendFimTarde    String
+
+  orgao     Orgao     @relation(fields: [orgaoId], references: [id], onDelete: Cascade)
+  municipio Municipio @relation(fields: [municipioId], references: [id])
+}
+
+model Setor {
+  id       Int      @id @default(autoincrement())
+  orgaoId  Int
+  sigla    String
+  nome     String
+  ativo    Boolean  @default(true)
+  criadoEm DateTime @default(now())
+
+  orgao Orgao @relation(fields: [orgaoId], references: [id], onDelete: Cascade)
+
+  @@unique([orgaoId, sigla])
+}
+
+model Gestor {
+  id        Int     @id @default(autoincrement())
+  orgaoId   Int
+  nome      String
+  biografia String
+  fotoUrl   String?
+  ativo     Boolean @default(true)
+
+  orgao Orgao @relation(fields: [orgaoId], references: [id], onDelete: Cascade)
+}
+
+model OrgaoUsuario {
+  id       Int     @id @default(autoincrement())
+  orgaoId  Int
+  pessoaId Int
+  perfil   String
+  ativo    Boolean @default(true)
+
+  orgao  Orgao  @relation(fields: [orgaoId], references: [id], onDelete: Cascade)
+  pessoa Pessoa @relation(fields: [pessoaId], references: [id])
+
+  @@unique([orgaoId, pessoaId])
+}
+
+model SiteRelacionado {
+  id      Int     @id @default(autoincrement())
+  orgaoId Int
+  titulo  String
+  link    String
+  ativo   Boolean @default(true)
+
+  orgao Orgao @relation(fields: [orgaoId], references: [id], onDelete: Cascade)
 }
 
 model TipoPonto {
@@ -81,10 +187,12 @@ model Endereco {
 }
 
 model Pessoa {
-  id   Int    @id @default(autoincrement())
+  id   Int     @id @default(autoincrement())
   nome String
+  cpf  String? @unique
 
   responsavelDe PontoResponsavel[]
+  orgaos        OrgaoUsuario[]
 }
 
 model PontoResponsavel {
