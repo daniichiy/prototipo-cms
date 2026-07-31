@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import MultiSelect from "@/components/MultiSelect";
 import { Campo, inputClass } from "@/components/cms/form-ui";
 import PeriodosEditor from "@/components/cms/PeriodosEditor";
-import { resumoPeriodos, type PeriodoInput } from "@/lib/horarios";
+import {
+  normalizarPeriodo,
+  resumoPeriodos,
+  type PeriodoInput,
+} from "@/lib/horarios";
 
 export type ModeloHorarioResumo = {
   id: number;
@@ -44,7 +48,7 @@ export default function HorariosEditor({
     setModeloId(id);
     const modelo = modelos.find((m) => String(m.id) === id);
     if (modelo?.periodos.length) {
-      onChange(modelo.periodos.map((p) => ({ ...p })));
+      onChange(modelo.periodos.map(normalizarPeriodo));
     }
   }
 

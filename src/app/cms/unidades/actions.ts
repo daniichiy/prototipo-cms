@@ -11,7 +11,11 @@ import {
   TIPO_FUNCIONAMENTO,
 } from "@/lib/horarios";
 import { getTipoHorarioId } from "@/lib/tipoHorario";
-import { ROTULO_CENTRAL } from "@/lib/contato";
+import {
+  ROTULO_CENTRAL,
+  TIPO_CANAL_OUTRO,
+  rotuloDoTipoCanal,
+} from "@/lib/contato";
 
 type CanalInput = { tipo: string; rotulo: string; valor: string };
 type ServicoInput = { servicoId: number };
@@ -108,7 +112,16 @@ function assertValid(v: Valores) {
 // Telefone e e-mail da Central de Atendimento são guardados como canais, com
 // rótulo fixo, para o formulário conseguir separá-los dos canais adicionais.
 function montarCanais(v: Valores): CanalInput[] {
-  const canais = v.canais.filter((c) => c.valor.trim());
+  // fora de "Outro", o próprio tipo do canal é o rótulo
+  const canais = v.canais
+    .filter((c) => c.valor.trim())
+    .map((c) => ({
+      ...c,
+      rotulo:
+        c.tipo === TIPO_CANAL_OUTRO
+          ? c.rotulo.trim()
+          : rotuloDoTipoCanal(c.tipo),
+    }));
   const central: CanalInput[] = [];
   if (v.telefone) {
     central.push({ tipo: "telefone", rotulo: ROTULO_CENTRAL, valor: v.telefone });

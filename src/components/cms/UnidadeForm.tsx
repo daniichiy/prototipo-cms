@@ -12,7 +12,16 @@ import HorariosEditor, {
   type ModeloHorarioResumo,
 } from "@/components/cms/HorariosEditor";
 import { maskCep, maskPhone } from "@/lib/masks";
-import { PERIODO_VAZIO, type PeriodoInput } from "@/lib/horarios";
+import {
+  TIPOS_CANAL,
+  TIPO_CANAL_OUTRO,
+  rotuloDoTipoCanal,
+} from "@/lib/contato";
+import {
+  PERIODO_VAZIO,
+  normalizarPeriodo,
+  type PeriodoInput,
+} from "@/lib/horarios";
 
 type Canal = { tipo: string; rotulo: string; valor: string };
 type ServicoSel = { servicoId: number | null };
@@ -73,18 +82,24 @@ export default function UnidadeForm({
   );
   const [telefone, setTelefone] = useState(initialData?.telefone ?? "");
 
-  const [canais, setCanais] = useState<Canal[]>(initialData?.canais ?? []);
+  const [canais, setCanais] = useState<Canal[]>(
+    (initialData?.canais ?? []).map((c) => ({
+      tipo: c.tipo ?? "telefone",
+      rotulo: c.rotulo ?? "",
+      valor: c.valor ?? "",
+    }))
+  );
 
   const [periodosFuncionamento, setPeriodosFuncionamento] = useState<
     PeriodoInput[]
   >(
     initialData?.periodosFuncionamento?.length
-      ? initialData.periodosFuncionamento
+      ? initialData.periodosFuncionamento.map(normalizarPeriodo)
       : [{ ...PERIODO_VAZIO }]
   );
   const [periodosAtendimento, setPeriodosAtendimento] = useState<PeriodoInput[]>(
     initialData?.periodosAtendimento?.length
-      ? initialData.periodosAtendimento
+      ? initialData.periodosAtendimento.map(normalizarPeriodo)
       : [{ ...PERIODO_VAZIO }]
   );
   const [replicarFuncionamento, setReplicarFuncionamento] = useState<number[]>(
@@ -97,10 +112,20 @@ export default function UnidadeForm({
   );
 
   function addCanal() {
-    setCanais((prev) => [...prev, { tipo: "telefone", rotulo: "", valor: "" }]);
+    setCanais((prev) => [
+      ...prev,
+      { tipo: "telefone", rotulo: rotuloDoTipoCanal("telefone"), valor: "" },
+    ]);
   }
   function updateCanal(index: number, patch: Partial<Canal>) {
     setCanais((prev) => prev.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+  }
+  // O próprio tipo vira o rótulo do canal; só "Outro" tem rótulo digitado.
+  function updateTipoCanal(index: number, tipo: string) {
+    updateCanal(index, {
+      tipo,
+      rotulo: tipo === TIPO_CANAL_OUTRO ? "" : rotuloDoTipoCanal(tipo),
+    });
   }
   function removeCanal(index: number) {
     setCanais((prev) => prev.filter((_, i) => i !== index));
@@ -143,6 +168,18 @@ export default function UnidadeForm({
             />
           </Campo>
 
+          <Campo label="CEP" required>
+            <input
+              type="text"
+              name="cep"
+              value={cep}
+              onChange={(e) => setCep(maskCep(e.target.value))}
+              placeholder="00000-000"
+              required
+              className={inputClass}
+            />
+          </Campo>
+
           <Campo
             label="Endereço"
             required
@@ -173,18 +210,6 @@ export default function UnidadeForm({
               type="text"
               name="bairro"
               defaultValue={initialData?.bairro ?? ""}
-              required
-              className={inputClass}
-            />
-          </Campo>
-
-          <Campo label="CEP" required>
-            <input
-              type="text"
-              name="cep"
-              value={cep}
-              onChange={(e) => setCep(maskCep(e.target.value))}
-              placeholder="00000-000"
               required
               className={inputClass}
             />
@@ -313,21 +338,24 @@ export default function UnidadeForm({
             <div key={i} className="flex flex-wrap items-center gap-2">
               <select
                 value={canal.tipo}
-                onChange={(e) => updateCanal(i, { tipo: e.target.value })}
+                onChange={(e) => updateTipoCanal(i, e.target.value)}
                 className={`${inputClass} w-36`}
               >
-                <option value="telefone">Telefone</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="email">E-mail</option>
-                <option value="outro">Outro</option>
+                {TIPOS_CANAL.map((t) => (
+                  <option key={t.valor} value={t.valor}>
+                    {t.label}
+                  </option>
+                ))}
               </select>
-              <input
-                type="text"
-                placeholder="Rótulo (ex: Ouvidoria)"
-                value={canal.rotulo}
-                onChange={(e) => updateCanal(i, { rotulo: e.target.value })}
-                className={`${inputClass} flex-1 min-w-[10rem]`}
-              />
+              {canal.tipo === TIPO_CANAL_OUTRO && (
+                <input
+                  type="text"
+                  placeholder="Rótulo (ex: WhatsApp da Glória)"
+                  value={canal.rotulo}
+                  onChange={(e) => updateCanal(i, { rotulo: e.target.value })}
+                  className={`${inputClass} flex-1 min-w-[10rem]`}
+                />
+              )}
               <input
                 type="text"
                 placeholder="Valor"

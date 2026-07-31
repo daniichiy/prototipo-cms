@@ -140,10 +140,23 @@ export function buildHorarioRows(
   return rows;
 }
 
+// Todo campo precisa chegar definido nos inputs do formulário: um objeto vindo
+// de JSON sem alguma chave tornaria o input não controlado no primeiro render.
+export function normalizarPeriodo(periodo: Partial<PeriodoInput>): PeriodoInput {
+  return {
+    dias: Array.isArray(periodo.dias) ? periodo.dias.map(Number) : [],
+    temIntervalo: Boolean(periodo.temIntervalo),
+    inicioManha: periodo.inicioManha ?? "",
+    fimManha: periodo.fimManha ?? "",
+    inicioTarde: periodo.inicioTarde ?? "",
+    fimTarde: periodo.fimTarde ?? "",
+  };
+}
+
 export function parsePeriodos(json: string): PeriodoInput[] {
   try {
     const dados = JSON.parse(json);
-    return Array.isArray(dados) ? (dados as PeriodoInput[]) : [];
+    return Array.isArray(dados) ? dados.map(normalizarPeriodo) : [];
   } catch {
     return [];
   }
