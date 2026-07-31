@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slugify";
-import { serializeDiasSemana } from "@/lib/orgao";
+import { nomeDoOrgao, serializeDiasSemana } from "@/lib/orgao";
 
 function texto(formData: FormData, campo: string) {
   return String(formData.get(campo) ?? "").trim();
@@ -37,22 +37,20 @@ function revalidarOrgao(id: number) {
 
 // ---------------------------------------------------------------- Órgão
 
+// O formulário oferece apenas as siglas de ORGAOS_DISPONIVEIS; o nome completo
+// vem da própria lista.
 function parseOrgao(formData: FormData) {
-  return {
-    nome: texto(formData, "nome"),
-    sigla: texto(formData, "sigla"),
-    ativo: marcado(formData, "ativo"),
-  };
-}
+  const sigla = texto(formData, "sigla");
+  if (!sigla) throw new Error("Selecione o órgão.");
 
-function assertOrgao(v: ReturnType<typeof parseOrgao>) {
-  if (!v.nome) throw new Error("Nome é obrigatório.");
-  if (!v.sigla) throw new Error("Sigla é obrigatória.");
+  const nome = nomeDoOrgao(sigla);
+  if (!nome) throw new Error(`Órgão "${sigla}" não está na lista de opções.`);
+
+  return { nome, sigla };
 }
 
 export async function createOrgao(formData: FormData) {
   const v = parseOrgao(formData);
-  assertOrgao(v);
   // o slug deixou de ser preenchido no formulário: sai da sigla
   const slug = await ensureUniqueSlug(slugify(v.sigla));
 
@@ -65,7 +63,6 @@ export async function createOrgao(formData: FormData) {
       nome: v.nome,
       sigla: v.sigla,
       slug,
-      ativo: v.ativo,
       contato: contato ? { create: contato } : undefined,
       endereco: endereco ? { create: endereco } : undefined,
     },
@@ -77,7 +74,6 @@ export async function createOrgao(formData: FormData) {
 
 export async function updateOrgao(id: number, formData: FormData) {
   const v = parseOrgao(formData);
-  assertOrgao(v);
   const slug = await ensureUniqueSlug(slugify(v.sigla), id);
 
   const contato = parseContato(formData);
@@ -89,7 +85,6 @@ export async function updateOrgao(id: number, formData: FormData) {
       nome: v.nome,
       sigla: v.sigla,
       slug,
-      ativo: v.ativo,
       contato: contato
         ? { upsert: { create: contato, update: contato } }
         : undefined,

@@ -1,5 +1,24 @@
 import { DIAS_SEMANA } from "@/lib/masks";
 
+/** Órgãos disponíveis no cadastro — o formulário só oferece estas opções. */
+export const ORGAOS_DISPONIVEIS = [
+  {
+    sigla: "AGEPEN",
+    nome: "Agência Estadual de Administração do Sistema Penitenciário",
+  },
+  { sigla: "DETRAN", nome: "Departamento Estadual de Trânsito" },
+  {
+    sigla: "SEJUSP",
+    nome: "Secretaria de Estado de Justiça e Segurança Pública",
+  },
+  { sigla: "SES", nome: "Secretaria de Estado de Saúde" },
+];
+
+/** Nome completo a partir da sigla escolhida no select. */
+export function nomeDoOrgao(sigla: string): string | null {
+  return ORGAOS_DISPONIVEIS.find((o) => o.sigla === sigla)?.nome ?? null;
+}
+
 export const PERFIS_USUARIO = [
   "Gerente",
   "Administrador",

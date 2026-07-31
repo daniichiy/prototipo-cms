@@ -51,11 +51,7 @@ export default async function EditarOrgaoPage({
         action={updateOrgaoComId}
         cancelHref={`/cms/orgaos/${id}`}
         submitLabel="Salvar"
-        initialData={{
-          nome: orgao.nome,
-          sigla: orgao.sigla,
-          ativo: orgao.ativo,
-        }}
+        initialData={{ sigla: orgao.sigla }}
         municipios={municipios}
         contatoInitial={{
           telefone: c?.telefone ?? "",

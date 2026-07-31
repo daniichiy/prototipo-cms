@@ -14,11 +14,10 @@ import ContatoCampos, {
 import EnderecoCampos, {
   type EnderecoInitialData,
 } from "@/components/cms/orgao/EnderecoCampos";
+import { ORGAOS_DISPONIVEIS } from "@/lib/orgao";
 
 export type OrgaoFormInitialData = {
-  nome: string;
   sigla: string;
-  ativo: boolean;
 };
 
 export default function OrgaoForm({
@@ -41,48 +40,24 @@ export default function OrgaoForm({
 }) {
   return (
     <form action={action} className="space-y-8 pb-16">
-      <Secao titulo="Informações do Órgão" subtitulo="Dados básicos do órgão">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Campo label="Sigla" required hint="Informe a sigla do órgão">
-            <input
-              type="text"
-              name="sigla"
-              defaultValue={initialData?.sigla ?? ""}
-              required
-              className={inputClass}
-            />
-          </Campo>
-
-          <Campo
-            label="Nome"
+      <Secao titulo="Órgão" subtitulo="Selecione o órgão">
+        <Campo label="Órgão" required hint="Escolha o órgão na lista">
+          <select
+            name="sigla"
+            defaultValue={initialData?.sigla ?? ""}
             required
-            className="sm:col-span-2"
-            hint="Informe o nome completo do órgão"
+            className={inputClass}
           >
-            <input
-              type="text"
-              name="nome"
-              defaultValue={initialData?.nome ?? ""}
-              required
-              className={inputClass}
-            />
-          </Campo>
-
-          <div className="sm:col-span-3">
-            <label className="flex items-start gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                name="ativo"
-                defaultChecked={initialData?.ativo ?? true}
-                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-navy-800 focus:ring-navy-700"
-              />
-              Ativo?
-            </label>
-            <p className="ml-6 mt-0.5 text-xs text-slate-400">
-              Informe se o órgão está ativo ou inativo
-            </p>
-          </div>
-        </div>
+            <option value="" disabled>
+              Selecione o órgão...
+            </option>
+            {ORGAOS_DISPONIVEIS.map((o) => (
+              <option key={o.sigla} value={o.sigla}>
+                {o.sigla}
+              </option>
+            ))}
+          </select>
+        </Campo>
       </Secao>
 
       {municipios && (
