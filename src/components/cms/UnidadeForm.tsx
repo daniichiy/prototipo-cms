@@ -24,7 +24,6 @@ import {
 } from "@/lib/horarios";
 
 type Canal = { tipo: string; rotulo: string; valor: string };
-type ServicoSel = { servicoId: number | null };
 
 export type UnidadeFormInitialData = {
   nome: string;
@@ -43,14 +42,12 @@ export type UnidadeFormInitialData = {
   canais: Canal[];
   periodosFuncionamento: PeriodoInput[];
   periodosAtendimento: PeriodoInput[];
-  servicos: ServicoSel[];
 };
 
 export default function UnidadeForm({
   action,
   orgaos,
   municipios,
-  servicosCatalogo,
   modelosHorario,
   outrosLocais,
   salvarModeloHorario,
@@ -60,7 +57,6 @@ export default function UnidadeForm({
   action: (formData: FormData) => Promise<void>;
   orgaos: { id: number; nome: string; sigla: string }[];
   municipios: { id: number; nome: string; uf: string }[];
-  servicosCatalogo: { id: number; nome: string }[];
   modelosHorario: ModeloHorarioResumo[];
   outrosLocais: { id: number; nome: string; sublabel?: string }[];
   salvarModeloHorario: (nome: string, periodosJson: string) => Promise<void>;
@@ -107,10 +103,6 @@ export default function UnidadeForm({
   );
   const [replicarAtendimento, setReplicarAtendimento] = useState<number[]>([]);
 
-  const [servicosSel, setServicosSel] = useState<ServicoSel[]>(
-    initialData?.servicos ?? []
-  );
-
   function addCanal() {
     setCanais((prev) => [
       ...prev,
@@ -130,25 +122,6 @@ export default function UnidadeForm({
   function removeCanal(index: number) {
     setCanais((prev) => prev.filter((_, i) => i !== index));
   }
-
-  function addServico() {
-    setServicosSel((prev) => [...prev, { servicoId: null }]);
-  }
-  function updateServico(index: number, servicoId: number | null) {
-    setServicosSel((prev) =>
-      prev.map((s, i) => (i === index ? { servicoId } : s))
-    );
-  }
-  function removeServico(index: number) {
-    setServicosSel((prev) => prev.filter((_, i) => i !== index));
-  }
-  function selecionarTodosServicos() {
-    setServicosSel(servicosCatalogo.map((s) => ({ servicoId: s.id })));
-  }
-
-  const servicosValidos = servicosSel.filter(
-    (s): s is { servicoId: number } => s.servicoId !== null
-  );
 
   return (
     <form action={action} className="space-y-8 pb-16">
@@ -412,50 +385,6 @@ export default function UnidadeForm({
         />
       </Secao>
 
-      {/* BLOCO 5 — Serviços vinculados */}
-      <Secao
-        titulo="Serviços vinculados"
-        subtitulo="Serviços prestados neste local de atendimento"
-      >
-        <div className="space-y-3">
-          {servicosSel.map((servico, i) => (
-            <div key={i} className="flex flex-wrap items-center gap-3">
-              <div className="min-w-[16rem] flex-1">
-                <SearchableSelect
-                  value={servico.servicoId}
-                  onChange={(id) => updateServico(i, id)}
-                  placeholder="Buscar serviço..."
-                  options={servicosCatalogo.map((s) => ({
-                    id: s.id,
-                    label: s.nome,
-                  }))}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => removeServico(i)}
-                className="text-sm text-red-600 hover:underline"
-              >
-                Remover
-              </button>
-            </div>
-          ))}
-
-          <div className="flex gap-3">
-            <button type="button" onClick={addServico} className={botaoAdicionarClass}>
-              + adicionar serviço
-            </button>
-            <button
-              type="button"
-              onClick={selecionarTodosServicos}
-              className="text-sm font-medium text-gold-600 hover:underline"
-            >
-              Selecionar todos
-            </button>
-          </div>
-        </div>
-      </Secao>
-
       {/* Campos ocultos com estruturas complexas serializadas */}
       <input type="hidden" name="canaisJson" value={JSON.stringify(canais)} />
       <input
@@ -477,11 +406,6 @@ export default function UnidadeForm({
         type="hidden"
         name="replicarAtendimentoJson"
         value={JSON.stringify(replicarAtendimento)}
-      />
-      <input
-        type="hidden"
-        name="servicosJson"
-        value={JSON.stringify(servicosValidos)}
       />
 
       <div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-200 bg-slate-50/95 px-1 py-4 backdrop-blur">

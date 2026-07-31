@@ -19,7 +19,7 @@ export default async function EditarUnidadePage({
   const { id: idParam } = await params;
   const id = Number(idParam);
 
-  const [ponto, orgaos, municipios, servicosCatalogo, modelos, outrosLocais] =
+  const [ponto, orgaos, municipios, modelos, outrosLocais] =
     await Promise.all([
       prisma.pontoAtendimento.findUnique({
         where: { id },
@@ -28,12 +28,10 @@ export default async function EditarUnidadePage({
           responsaveis: { include: { pessoa: true } },
           canais: true,
           horarios: { include: { tipoHorario: true } },
-          servicos: true,
         },
       }),
       prisma.orgao.findMany({ orderBy: { nome: "asc" } }),
       prisma.municipio.findMany({ orderBy: { nome: "asc" } }),
-      prisma.servico.findMany({ orderBy: { nome: "asc" } }),
       prisma.modeloHorario.findMany({ orderBy: { nome: "asc" } }),
       prisma.pontoAtendimento.findMany({
         where: { id: { not: id } },
@@ -74,7 +72,6 @@ export default async function EditarUnidadePage({
         action={updateUnidadeComId}
         orgaos={orgaos}
         municipios={municipios}
-        servicosCatalogo={servicosCatalogo}
         modelosHorario={modelos.map((m) => ({
           id: m.id,
           nome: m.nome,
@@ -108,7 +105,6 @@ export default async function EditarUnidadePage({
           periodosAtendimento: reconstructPeriods(
             horariosDoTipo(TIPO_ATENDIMENTO)
           ),
-          servicos: ponto.servicos.map((s) => ({ servicoId: s.servicoId })),
         }}
       />
     </div>

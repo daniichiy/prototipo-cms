@@ -18,7 +18,6 @@ import {
 } from "@/lib/contato";
 
 type CanalInput = { tipo: string; rotulo: string; valor: string };
-type ServicoInput = { servicoId: number };
 
 // O tipo de ponto deixou de ser preenchido no formulário; todo local cadastrado
 // pelo CMS entra como "Unidade".
@@ -91,9 +90,6 @@ function parseFormValues(formData: FormData) {
     ),
     replicarFuncionamento: parseIds(formData.get("replicarFuncionamentoJson")),
     replicarAtendimento: parseIds(formData.get("replicarAtendimentoJson")),
-    servicos: JSON.parse(
-      String(formData.get("servicosJson") ?? "[]")
-    ) as ServicoInput[],
   };
 }
 
@@ -222,15 +218,6 @@ export async function createUnidade(formData: FormData) {
       });
     }
 
-    if (v.servicos.length) {
-      await tx.servicoUnidade.createMany({
-        data: v.servicos.map((s) => ({
-          servicoId: s.servicoId,
-          pontoAtendimentoId: ponto.id,
-        })),
-      });
-    }
-
     await replicarHorarios(
       tx,
       v.replicarFuncionamento,
@@ -307,15 +294,8 @@ export async function updateUnidade(id: number, formData: FormData) {
       });
     }
 
-    await tx.servicoUnidade.deleteMany({ where: { pontoAtendimentoId: id } });
-    if (v.servicos.length) {
-      await tx.servicoUnidade.createMany({
-        data: v.servicos.map((s) => ({
-          servicoId: s.servicoId,
-          pontoAtendimentoId: id,
-        })),
-      });
-    }
+    // os serviços vinculados não são mais editados neste formulário —
+    // os vínculos existentes são preservados
 
     await replicarHorarios(
       tx,
