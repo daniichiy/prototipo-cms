@@ -82,7 +82,7 @@ export default function HorariosEditor({
           hint="Preenche os períodos abaixo com um horário salvo — você ainda pode ajustá-lo."
         >
           <select
-            value={modeloId}
+            value={modeloId ?? ""}
             onChange={(e) => aplicarModelo(e.target.value)}
             className={inputClass}
           >

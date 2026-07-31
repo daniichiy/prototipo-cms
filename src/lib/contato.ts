@@ -18,3 +18,17 @@ export const TIPOS_CANAL = [
 export function rotuloDoTipoCanal(tipo: string): string {
   return TIPOS_CANAL.find((t) => t.valor === tipo)?.label ?? tipo;
 }
+
+export type CanalInput = { tipo: string; rotulo: string; valor: string };
+
+/**
+ * Todo campo do canal precisa chegar definido nos inputs: um `undefined` num
+ * campo controlado faz o React reclamar que o input virou não controlado.
+ */
+export function normalizarCanal(canal: Partial<CanalInput>): CanalInput {
+  return {
+    tipo: canal.tipo || "telefone",
+    rotulo: canal.rotulo ?? "",
+    valor: canal.valor ?? "",
+  };
+}

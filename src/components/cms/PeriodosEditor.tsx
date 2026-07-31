@@ -60,7 +60,7 @@ export default function PeriodosEditor({
               >
                 <input
                   type="checkbox"
-                  checked={periodo.dias.includes(d.valor)}
+                  checked={(periodo.dias ?? []).includes(d.valor)}
                   onChange={() => toggleDia(i, d.valor)}
                   className="h-4 w-4 rounded border-slate-300 text-navy-800 focus:ring-navy-700"
                 />
@@ -72,7 +72,7 @@ export default function PeriodosEditor({
           <label className="mb-3 flex items-center gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
-              checked={periodo.temIntervalo}
+              checked={Boolean(periodo.temIntervalo)}
               onChange={(e) =>
                 updatePeriod(i, { temIntervalo: e.target.checked })
               }
@@ -85,7 +85,7 @@ export default function PeriodosEditor({
             <Campo label="Início da manhã">
               <input
                 type="time"
-                value={periodo.inicioManha}
+                value={periodo.inicioManha ?? ""}
                 onChange={(e) =>
                   updatePeriod(i, { inicioManha: e.target.value })
                 }
@@ -96,7 +96,7 @@ export default function PeriodosEditor({
               <input
                 type="time"
                 disabled={!periodo.temIntervalo}
-                value={periodo.fimManha}
+                value={periodo.fimManha ?? ""}
                 onChange={(e) => updatePeriod(i, { fimManha: e.target.value })}
                 className={`${inputClass} disabled:bg-slate-100 disabled:text-slate-400`}
               />
@@ -105,7 +105,7 @@ export default function PeriodosEditor({
               <input
                 type="time"
                 disabled={!periodo.temIntervalo}
-                value={periodo.inicioTarde}
+                value={periodo.inicioTarde ?? ""}
                 onChange={(e) =>
                   updatePeriod(i, { inicioTarde: e.target.value })
                 }
@@ -115,7 +115,7 @@ export default function PeriodosEditor({
             <Campo label="Fim da tarde">
               <input
                 type="time"
-                value={periodo.fimTarde}
+                value={periodo.fimTarde ?? ""}
                 onChange={(e) => updatePeriod(i, { fimTarde: e.target.value })}
                 className={inputClass}
               />

@@ -16,6 +16,8 @@ import {
   TIPOS_CANAL,
   TIPO_CANAL_OUTRO,
   rotuloDoTipoCanal,
+  normalizarCanal,
+  type CanalInput,
 } from "@/lib/contato";
 import {
   PERIODO_VAZIO,
@@ -23,7 +25,7 @@ import {
   type PeriodoInput,
 } from "@/lib/horarios";
 
-type Canal = { tipo: string; rotulo: string; valor: string };
+type Canal = CanalInput;
 
 export type UnidadeFormInitialData = {
   nome: string;
@@ -79,11 +81,7 @@ export default function UnidadeForm({
   const [telefone, setTelefone] = useState(initialData?.telefone ?? "");
 
   const [canais, setCanais] = useState<Canal[]>(
-    (initialData?.canais ?? []).map((c) => ({
-      tipo: c.tipo ?? "telefone",
-      rotulo: c.rotulo ?? "",
-      valor: c.valor ?? "",
-    }))
+    (initialData?.canais ?? []).map(normalizarCanal)
   );
 
   const [periodosFuncionamento, setPeriodosFuncionamento] = useState<
@@ -110,7 +108,10 @@ export default function UnidadeForm({
     ]);
   }
   function updateCanal(index: number, patch: Partial<Canal>) {
-    setCanais((prev) => prev.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+    // normaliza para nenhum campo virar undefined e tornar o input não controlado
+    setCanais((prev) =>
+      prev.map((c, i) => (i === index ? normalizarCanal({ ...c, ...patch }) : c))
+    );
   }
   // O próprio tipo vira o rótulo do canal; só "Outro" tem rótulo digitado.
   function updateTipoCanal(index: number, tipo: string) {
@@ -165,7 +166,7 @@ export default function UnidadeForm({
             <input
               type="text"
               name="cep"
-              value={cep}
+              value={cep ?? ""}
               onChange={(e) => setCep(maskCep(e.target.value))}
               placeholder="00000-000"
               required
@@ -285,7 +286,7 @@ export default function UnidadeForm({
               <input
                 type="text"
                 name="telefone"
-                value={telefone}
+                value={telefone ?? ""}
                 onChange={(e) => setTelefone(maskPhone(e.target.value))}
                 placeholder="(00) 00000-0000"
                 className={inputClass}
@@ -315,7 +316,7 @@ export default function UnidadeForm({
           {canais.map((canal, i) => (
             <div key={i} className="flex flex-wrap items-center gap-2">
               <select
-                value={canal.tipo}
+                value={canal.tipo || "telefone"}
                 onChange={(e) => updateTipoCanal(i, e.target.value)}
                 className={`${inputClass} w-36`}
               >
@@ -329,7 +330,7 @@ export default function UnidadeForm({
                 <input
                   type="text"
                   placeholder="Rótulo (ex: WhatsApp da Glória)"
-                  value={canal.rotulo}
+                  value={canal.rotulo ?? ""}
                   onChange={(e) => updateCanal(i, { rotulo: e.target.value })}
                   className={`${inputClass} flex-1 min-w-[10rem]`}
                 />
@@ -337,7 +338,7 @@ export default function UnidadeForm({
               <input
                 type="text"
                 placeholder="Valor"
-                value={canal.valor}
+                value={canal.valor ?? ""}
                 onChange={(e) => updateCanal(i, { valor: e.target.value })}
                 className={`${inputClass} flex-1 min-w-[10rem]`}
               />

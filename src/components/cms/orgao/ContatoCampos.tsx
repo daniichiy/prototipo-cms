@@ -11,9 +11,11 @@ import {
   TIPOS_CANAL,
   TIPO_CANAL_OUTRO,
   rotuloDoTipoCanal,
+  normalizarCanal,
+  type CanalInput,
 } from "@/lib/contato";
 
-export type CanalContatoInput = { tipo: string; rotulo: string; valor: string };
+export type CanalContatoInput = CanalInput;
 
 export type ContatoInitialData = {
   responsavel: string;
@@ -31,11 +33,7 @@ export default function ContatoCampos({
 }) {
   const [telefone, setTelefone] = useState(initialData?.telefone ?? "");
   const [canais, setCanais] = useState<CanalContatoInput[]>(
-    (initialData?.canais ?? []).map((c) => ({
-      tipo: c.tipo ?? "telefone",
-      rotulo: c.rotulo ?? "",
-      valor: c.valor ?? "",
-    }))
+    (initialData?.canais ?? []).map(normalizarCanal)
   );
 
   function addCanal() {
@@ -45,8 +43,9 @@ export default function ContatoCampos({
     ]);
   }
   function updateCanal(index: number, patch: Partial<CanalContatoInput>) {
+    // normaliza para nenhum campo virar undefined e tornar o input não controlado
     setCanais((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, ...patch } : c))
+      prev.map((c, i) => (i === index ? normalizarCanal({ ...c, ...patch }) : c))
     );
   }
   // O próprio tipo vira o rótulo do canal; só "Outro" tem rótulo digitado.
@@ -86,7 +85,7 @@ export default function ContatoCampos({
           <input
             type="text"
             name="telefone"
-            value={telefone}
+            value={telefone ?? ""}
             onChange={(e) => setTelefone(maskPhone(e.target.value))}
             placeholder="(00) 0000-0000"
             required={obrigatorio}
@@ -123,7 +122,7 @@ export default function ContatoCampos({
         {canais.map((canal, i) => (
           <div key={i} className="flex flex-wrap items-center gap-2">
             <select
-              value={canal.tipo}
+              value={canal.tipo || "telefone"}
               onChange={(e) => updateTipoCanal(i, e.target.value)}
               className={`${inputClass} w-36`}
             >
@@ -137,7 +136,7 @@ export default function ContatoCampos({
               <input
                 type="text"
                 placeholder="Rótulo (ex: Instagram)"
-                value={canal.rotulo}
+                value={canal.rotulo ?? ""}
                 onChange={(e) => updateCanal(i, { rotulo: e.target.value })}
                 className={`${inputClass} min-w-[10rem] flex-1`}
               />
@@ -145,7 +144,7 @@ export default function ContatoCampos({
             <input
               type="text"
               placeholder="Valor"
-              value={canal.valor}
+              value={canal.valor ?? ""}
               onChange={(e) => updateCanal(i, { valor: e.target.value })}
               className={`${inputClass} min-w-[10rem] flex-1`}
             />
