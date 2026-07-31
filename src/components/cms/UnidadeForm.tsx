@@ -131,6 +131,26 @@ export default function UnidadeForm({
         subtitulo="Dados exibidos na seção “Onde solicitar” da Carta de Serviço"
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Campo
+            label="Órgão"
+            required
+            className="sm:col-span-3"
+            hint="Órgão responsável pelo local de atendimento"
+          >
+            <SearchableSelect
+              name="orgaoId"
+              required
+              value={orgaoId}
+              onChange={setOrgaoId}
+              placeholder="Buscar órgão..."
+              options={orgaos.map((o) => ({
+                id: o.id,
+                label: o.nome,
+                sublabel: o.sigla,
+              }))}
+            />
+          </Campo>
+
           <Campo label="Nome" required className="sm:col-span-3">
             <input
               type="text"
@@ -219,22 +239,7 @@ export default function UnidadeForm({
             />
           </Campo>
 
-          <Campo label="Órgão" required className="sm:col-span-2">
-            <SearchableSelect
-              name="orgaoId"
-              required
-              value={orgaoId}
-              onChange={setOrgaoId}
-              placeholder="Buscar órgão..."
-              options={orgaos.map((o) => ({
-                id: o.id,
-                label: o.nome,
-                sublabel: o.sigla,
-              }))}
-            />
-          </Campo>
-
-          <div className="flex items-center gap-2 pt-6">
+          <div className="flex items-center gap-2 pt-6 sm:col-span-3">
             <input
               type="checkbox"
               id="ativo"
