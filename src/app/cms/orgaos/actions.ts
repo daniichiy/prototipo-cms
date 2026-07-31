@@ -41,14 +41,7 @@ function parseOrgao(formData: FormData) {
   return {
     nome: texto(formData, "nome"),
     sigla: texto(formData, "sigla"),
-    slugInput: texto(formData, "slug"),
-    site: textoOuNulo(formData, "site"),
-    informacoes: textoOuNulo(formData, "informacoes"),
-    identificadorControlador: textoOuNulo(formData, "identificadorControlador"),
     ativo: marcado(formData, "ativo"),
-    orgaoExterno: marcado(formData, "orgaoExterno"),
-    atendenteMultiLocal: marcado(formData, "atendenteMultiLocal"),
-    ignoraRegrasAgendamento: marcado(formData, "ignoraRegrasAgendamento"),
   };
 }
 
@@ -60,20 +53,21 @@ function assertOrgao(v: ReturnType<typeof parseOrgao>) {
 export async function createOrgao(formData: FormData) {
   const v = parseOrgao(formData);
   assertOrgao(v);
-  const slug = await ensureUniqueSlug(slugify(v.slugInput || v.sigla));
+  // o slug deixou de ser preenchido no formulário: sai da sigla
+  const slug = await ensureUniqueSlug(slugify(v.sigla));
+
+  // contato e endereço vêm no mesmo formulário; ficam nulos quando não preenchidos
+  const contato = parseContato(formData);
+  const endereco = parseEndereco(formData);
 
   const orgao = await prisma.orgao.create({
     data: {
       nome: v.nome,
       sigla: v.sigla,
       slug,
-      site: v.site,
-      informacoes: v.informacoes,
-      identificadorControlador: v.identificadorControlador,
       ativo: v.ativo,
-      orgaoExterno: v.orgaoExterno,
-      atendenteMultiLocal: v.atendenteMultiLocal,
-      ignoraRegrasAgendamento: v.ignoraRegrasAgendamento,
+      contato: contato ? { create: contato } : undefined,
+      endereco: endereco ? { create: endereco } : undefined,
     },
   });
 
@@ -84,7 +78,10 @@ export async function createOrgao(formData: FormData) {
 export async function updateOrgao(id: number, formData: FormData) {
   const v = parseOrgao(formData);
   assertOrgao(v);
-  const slug = await ensureUniqueSlug(slugify(v.slugInput || v.sigla), id);
+  const slug = await ensureUniqueSlug(slugify(v.sigla), id);
+
+  const contato = parseContato(formData);
+  const endereco = parseEndereco(formData);
 
   await prisma.orgao.update({
     where: { id },
@@ -92,13 +89,13 @@ export async function updateOrgao(id: number, formData: FormData) {
       nome: v.nome,
       sigla: v.sigla,
       slug,
-      site: v.site,
-      informacoes: v.informacoes,
-      identificadorControlador: v.identificadorControlador,
       ativo: v.ativo,
-      orgaoExterno: v.orgaoExterno,
-      atendenteMultiLocal: v.atendenteMultiLocal,
-      ignoraRegrasAgendamento: v.ignoraRegrasAgendamento,
+      contato: contato
+        ? { upsert: { create: contato, update: contato } }
+        : undefined,
+      endereco: endereco
+        ? { upsert: { create: endereco, update: endereco } }
+        : undefined,
     },
   });
 
@@ -122,13 +119,27 @@ export async function deleteOrgao(id: number) {
 
 // -------------------------------------------------------------- Contato
 
-export async function upsertContato(orgaoId: number, formData: FormData) {
+const CAMPOS_CONTATO = [
+  "telefone",
+  "email",
+  "whatsapp",
+  "instagram",
+  "facebook",
+  "twitter",
+  "youtube",
+] as const;
+
+/** Retorna null quando nenhum campo de contato foi preenchido (seção opcional). */
+function parseContato(formData: FormData) {
+  const preenchido = CAMPOS_CONTATO.some((c) => texto(formData, c));
+  if (!preenchido) return null;
+
   const telefone = texto(formData, "telefone");
   const email = texto(formData, "email");
   if (!telefone) throw new Error("Informe um número de telefone.");
   if (!email) throw new Error("Informe um email válido.");
 
-  const dados = {
+  return {
     telefone,
     email,
     whatsapp: textoOuNulo(formData, "whatsapp"),
@@ -137,6 +148,11 @@ export async function upsertContato(orgaoId: number, formData: FormData) {
     twitter: textoOuNulo(formData, "twitter"),
     youtube: textoOuNulo(formData, "youtube"),
   };
+}
+
+export async function upsertContato(orgaoId: number, formData: FormData) {
+  const dados = parseContato(formData);
+  if (!dados) throw new Error("Informe ao menos telefone e email.");
 
   await prisma.orgaoContato.upsert({
     where: { orgaoId },
@@ -150,31 +166,46 @@ export async function upsertContato(orgaoId: number, formData: FormData) {
 
 // ------------------------------------------------------------- Endereço
 
-export async function upsertEndereco(orgaoId: number, formData: FormData) {
+const HORARIOS_OBRIGATORIOS = [
+  ["funcInicioManha", "o início do funcionamento pela manhã"],
+  ["funcFimTarde", "o fim do funcionamento pela tarde"],
+  ["atendInicioManha", "o início do atendimento pela manhã"],
+  ["atendFimTarde", "o fim do atendimento pela tarde"],
+] as const;
+
+/** Retorna null quando nenhum campo de endereço foi preenchido (seção opcional). */
+function parseEndereco(formData: FormData) {
   const logradouro = texto(formData, "logradouro");
-  const bairro = texto(formData, "bairro");
-  const cep = texto(formData, "cep");
-  const iframeMapa = texto(formData, "iframeMapa");
+  const sourceMapa = texto(formData, "sourceMapa");
   const municipioId = Number(formData.get("municipioId"));
   const dias = JSON.parse(String(formData.get("diasSemanaJson") ?? "[]"));
   const temIntervalo = marcado(formData, "temIntervalo");
+  const horarios = HORARIOS_OBRIGATORIOS.map(([campo]) => texto(formData, campo));
+
+  const preenchido =
+    logradouro ||
+    sourceMapa ||
+    municipioId ||
+    (Array.isArray(dias) && dias.length > 0) ||
+    horarios.some(Boolean);
+  if (!preenchido) return null;
 
   if (!logradouro) throw new Error("Informe o endereço.");
-  if (!bairro) throw new Error("Informe o bairro.");
-  if (!cep) throw new Error("Informe o CEP.");
-  if (!iframeMapa) throw new Error("Informe o source do mapa.");
-  if (Number.isNaN(municipioId)) throw new Error("Selecione a cidade.");
+  if (!sourceMapa) throw new Error("Informe o source do mapa.");
+  if (!municipioId || Number.isNaN(municipioId)) {
+    throw new Error("Selecione a cidade.");
+  }
   if (!Array.isArray(dias) || dias.length === 0) {
     throw new Error("Escolha ao menos um dia da semana.");
   }
+  HORARIOS_OBRIGATORIOS.forEach(([campo, rotulo]) => {
+    if (!texto(formData, campo)) throw new Error(`Informe ${rotulo}.`);
+  });
 
-  const dados = {
+  return {
     municipioId,
     logradouro,
-    complemento: textoOuNulo(formData, "complemento"),
-    bairro,
-    cep,
-    iframeMapa,
+    sourceMapa,
     diasSemana: serializeDiasSemana(dias),
     temIntervalo,
     funcInicioManha: texto(formData, "funcInicioManha"),
@@ -190,6 +221,11 @@ export async function upsertEndereco(orgaoId: number, formData: FormData) {
       : null,
     atendFimTarde: texto(formData, "atendFimTarde"),
   };
+}
+
+export async function upsertEndereco(orgaoId: number, formData: FormData) {
+  const dados = parseEndereco(formData);
+  if (!dados) throw new Error("Preencha os dados do endereço.");
 
   await prisma.orgaoEndereco.upsert({
     where: { orgaoId },

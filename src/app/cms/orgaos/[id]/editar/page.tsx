@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import OrgaoForm from "@/components/cms/OrgaoForm";
 import Trilha from "@/components/cms/Trilha";
 import { updateOrgao } from "@/app/cms/orgaos/actions";
+import { parseDiasSemana } from "@/lib/orgao";
 
 export default async function EditarOrgaoPage({
   params,
@@ -12,8 +13,17 @@ export default async function EditarOrgaoPage({
   const { id: idParam } = await params;
   const id = Number(idParam);
 
-  const orgao = await prisma.orgao.findUnique({ where: { id } });
+  const [orgao, municipios] = await Promise.all([
+    prisma.orgao.findUnique({
+      where: { id },
+      include: { contato: true, endereco: true },
+    }),
+    prisma.municipio.findMany({ orderBy: { nome: "asc" } }),
+  ]);
   if (!orgao) notFound();
+
+  const c = orgao.contato;
+  const e = orgao.endereco;
 
   const updateOrgaoComId = updateOrgao.bind(null, id);
 
@@ -32,7 +42,8 @@ export default async function EditarOrgaoPage({
           Gerenciar Órgão — {orgao.sigla}
         </h2>
         <p className="text-sm text-slate-500">
-          Atualize os dados do órgão e salve as alterações.
+          Atualize os dados do órgão, os contatos e o endereço e salve as
+          alterações.
         </p>
       </div>
 
@@ -43,14 +54,32 @@ export default async function EditarOrgaoPage({
         initialData={{
           nome: orgao.nome,
           sigla: orgao.sigla,
-          slug: orgao.slug,
-          site: orgao.site ?? "",
-          informacoes: orgao.informacoes ?? "",
-          identificadorControlador: orgao.identificadorControlador ?? "",
           ativo: orgao.ativo,
-          orgaoExterno: orgao.orgaoExterno,
-          atendenteMultiLocal: orgao.atendenteMultiLocal,
-          ignoraRegrasAgendamento: orgao.ignoraRegrasAgendamento,
+        }}
+        municipios={municipios}
+        contatoInitial={{
+          telefone: c?.telefone ?? "",
+          email: c?.email ?? "",
+          instagram: c?.instagram ?? "",
+          whatsapp: c?.whatsapp ?? "",
+          facebook: c?.facebook ?? "",
+          twitter: c?.twitter ?? "",
+          youtube: c?.youtube ?? "",
+        }}
+        enderecoInitial={{
+          logradouro: e?.logradouro ?? "",
+          sourceMapa: e?.sourceMapa ?? "",
+          municipioId: e?.municipioId ?? null,
+          dias: e ? parseDiasSemana(e.diasSemana) : [],
+          temIntervalo: e?.temIntervalo ?? false,
+          funcInicioManha: e?.funcInicioManha ?? "",
+          funcFimManha: e?.funcFimManha ?? "",
+          funcInicioTarde: e?.funcInicioTarde ?? "",
+          funcFimTarde: e?.funcFimTarde ?? "",
+          atendInicioManha: e?.atendInicioManha ?? "",
+          atendFimManha: e?.atendFimManha ?? "",
+          atendInicioTarde: e?.atendInicioTarde ?? "",
+          atendFimTarde: e?.atendFimTarde ?? "",
         }}
       />
     </div>

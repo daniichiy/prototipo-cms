@@ -61,18 +61,20 @@ model OrgaoContato {
   orgao Orgao @relation(fields: [orgaoId], references: [id], onDelete: Cascade)
 }
 
-// Endereço + horários do órgão. Diferente de Endereco (do ponto de atendimento),
-// o AS IS trata o endereço do órgão como um único campo de texto livre e guarda
-// os horários de funcionamento e de atendimento no próprio registro.
+// Endereço + horários do órgão. O endereço do órgão é um único campo de texto
+// livre (logradouro e número) e os horários de funcionamento e de atendimento
+// ficam no próprio registro.
+// bairro/cep/complemento não são mais editados no CMS — permanecem apenas para
+// não descartar o que já havia sido cadastrado.
 model OrgaoEndereco {
   id          Int     @id @default(autoincrement())
   orgaoId     Int     @unique
   municipioId Int
   logradouro  String
   complemento String?
-  bairro      String
-  cep         String
-  iframeMapa  String
+  bairro      String?
+  cep         String?
+  sourceMapa  String
   // dias da semana como CSV (1=Segunda ... 7=Domingo), ex: "1,2,3,4,5"
   diasSemana   String
   temIntervalo Boolean @default(false)

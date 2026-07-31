@@ -191,12 +191,9 @@ async function main() {
     create: {
       orgaoId: ses.id,
       municipioId: campoGrande.id,
-      logradouro: "Avenida do Poeta, s/n",
-      complemento: "Bloco 7, Parque dos Poderes",
-      bairro: "Jardim Veraneio",
-      cep: "79031-902",
-      iframeMapa:
-        '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3735.0!2d-54.55!3d-20.46" width="600" height="450" style="border:0;" allowfullscreen loading="lazy"></iframe>',
+      logradouro: "Avenida do Poeta, s/n — Bloco 7, Parque dos Poderes",
+      sourceMapa:
+        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3735.0!2d-54.55!3d-20.46",
       diasSemana: "1,2,3,4,5",
       temIntervalo: true,
       funcInicioManha: "07:30",

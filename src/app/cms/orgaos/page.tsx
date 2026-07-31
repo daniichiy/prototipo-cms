@@ -47,14 +47,7 @@ export default async function OrgaosPage() {
                   {o.sigla}
                   <p className="text-xs font-normal text-slate-400">/{o.slug}</p>
                 </td>
-                <td className="px-4 py-3 text-slate-600">
-                  {o.nome}
-                  {o.orgaoExterno && (
-                    <span className="ml-2 rounded-full bg-navy-100 px-2 py-0.5 text-xs text-navy-800">
-                      externo
-                    </span>
-                  )}
-                </td>
+                <td className="px-4 py-3 text-slate-600">{o.nome}</td>
                 <td className="px-4 py-3 text-slate-600">{o._count.setores}</td>
                 <td className="px-4 py-3 text-slate-600">
                   {o._count.pontosAtendimento}

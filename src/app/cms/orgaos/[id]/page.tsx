@@ -66,55 +66,18 @@ export default async function OrgaoInformacoesPage({
       <div className="space-y-6">
         {/* ---------------------------------------------- Informações */}
         <Card
-          titulo={
-            <span>
-              Informações do Órgão
-              {orgao.site && (
-                <>
-                  {" — "}
-                  <a
-                    href={orgao.site}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-brand-600 hover:underline"
-                  >
-                    Acessar site
-                  </a>
-                </>
-              )}
-            </span>
-          }
+          titulo="Informações do Órgão"
           acaoHref={`/cms/orgaos/${orgao.id}/editar`}
         >
           <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-5">
               <Dado label="Sigla">{orgao.sigla}</Dado>
               <Dado label="Nome">{orgao.nome}</Dado>
-              <Dado label="Ativo?">
-                <Booleano valor={orgao.ativo} />
-              </Dado>
-              <Dado label="Atendentes podem ser adicionados em mais de um local de atendimento?">
-                <Booleano valor={orgao.atendenteMultiLocal} />
-              </Dado>
             </div>
 
             <div className="space-y-5">
-              <Dado label="Slug">{orgao.slug}</Dado>
-              <Dado label="Informações">
-                {orgao.informacoes ? (
-                  <VisualizarHtml
-                    titulo="Informações do Órgão"
-                    html={orgao.informacoes}
-                  />
-                ) : (
-                  <NaoCadastrado />
-                )}
-              </Dado>
-              <Dado label="Órgão externo?">
-                <Booleano valor={orgao.orgaoExterno} />
-              </Dado>
-              <Dado label="Ignora regras de agendamento?">
-                <Booleano valor={orgao.ignoraRegrasAgendamento} />
+              <Dado label="Ativo?">
+                <Booleano valor={orgao.ativo} />
               </Dado>
             </div>
 
@@ -124,9 +87,6 @@ export default async function OrgaoInformacoesPage({
               </Dado>
               <Dado label="Atualizado em">
                 {formatDataHora(orgao.atualizadoEm)}
-              </Dado>
-              <Dado label="Identificador no controlador">
-                {orgao.identificadorControlador ?? <NaoCadastrado />}
               </Dado>
             </div>
           </dl>
@@ -142,17 +102,17 @@ export default async function OrgaoInformacoesPage({
               <Dado label="Email">{contato?.email ?? <NaoCadastrado />}</Dado>
             </div>
             <div className="space-y-5">
-              <Dado label="Whatsapp">
-                {contato?.whatsapp ?? <NaoCadastrado />}
-              </Dado>
               <Dado label="Facebook">
                 <Quebravel valor={contato?.facebook} />
               </Dado>
-            </div>
-            <div className="space-y-5">
+              <Dado label="Whatsapp">
+                {contato?.whatsapp ?? <NaoCadastrado />}
+              </Dado>
               <Dado label="Instagram">
                 <Quebravel valor={contato?.instagram} />
               </Dado>
+            </div>
+            <div className="space-y-5">
               <Dado label="Twitter">
                 <Quebravel valor={contato?.twitter} />
               </Dado>
@@ -171,25 +131,17 @@ export default async function OrgaoInformacoesPage({
           {endereco ? (
             <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-5">
-                <Dado label="Endereço">
-                  {[
-                    endereco.logradouro,
-                    endereco.complemento,
-                    `${endereco.bairro} - ${endereco.cep}`,
-                  ]
-                    .filter(Boolean)
-                    .join(", ")}
-                </Dado>
+                <Dado label="Endereço">{endereco.logradouro}</Dado>
                 <Dado label="Cidade">
                   {endereco.municipio.nome} - {endereco.municipio.uf}
                 </Dado>
               </div>
 
               <div className="space-y-5">
-                <Dado label="Rota">
+                <Dado label="Source do mapa">
                   <VisualizarHtml
                     titulo="Rota do Órgão"
-                    html={endereco.iframeMapa}
+                    html={endereco.sourceMapa}
                   />
                 </Dado>
                 <Dado label="Dias da semana">

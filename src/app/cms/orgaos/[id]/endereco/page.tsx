@@ -36,10 +36,7 @@ export default async function GerenciarEnderecoPage({
         municipios={municipios}
         initialData={{
           logradouro: e?.logradouro ?? "",
-          complemento: e?.complemento ?? "",
-          bairro: e?.bairro ?? "",
-          cep: e?.cep ?? "",
-          iframeMapa: e?.iframeMapa ?? "",
+          sourceMapa: e?.sourceMapa ?? "",
           municipioId: e?.municipioId ?? null,
           dias: e ? parseDiasSemana(e.diasSemana) : [],
           temIntervalo: e?.temIntervalo ?? false,
