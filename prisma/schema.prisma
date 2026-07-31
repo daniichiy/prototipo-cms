@@ -168,19 +168,18 @@ model PontoAtendimento {
   servicos     ServicoUnidade[]
 }
 
+// Endereço do local de atendimento. Conforme a pesquisa, o formulário usa um
+// único campo "Endereço" (logradouro + número) e um único campo "Source do mapa"
+// (link de referência do Google Maps).
 model Endereco {
   id                  Int     @id @default(autoincrement())
   pontoAtendimentoId  Int     @unique
   municipioId         Int
   logradouro          String
-  numero              String
   complemento         String?
   bairro              String
   cep                 String
-  iframeMapa          String
-  urlMapa             String?
-  latitude            Float?
-  longitude           Float?
+  sourceMapa          String
 
   pontoAtendimento PontoAtendimento @relation(fields: [pontoAtendimentoId], references: [id], onDelete: Cascade)
   municipio        Municipio        @relation(fields: [municipioId], references: [id])
@@ -216,11 +215,26 @@ model CanalContato {
   pontoAtendimento PontoAtendimento @relation(fields: [pontoAtendimentoId], references: [id], onDelete: Cascade)
 }
 
+// "Horário de funcionamento" (portas abertas) e "Horário de atendimento"
+// (atendimento ao cidadão) — os dois campos pedidos na pesquisa.
 model TipoHorario {
   id   Int    @id @default(autoincrement())
   nome String
+  slug String @unique
 
   horarios Horario[]
+}
+
+// Horário reutilizável: cadastra-se uma vez e aplica-se a vários locais de
+// atendimento de uma só vez (ex.: "07:30 às 17:30, seg a sex").
+model ModeloHorario {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+  descricao String?
+  // períodos serializados (dias da semana, intervalo e horários), no mesmo
+  // formato usado pelo formulário de unidade
+  periodosJson String
+  criadoEm     DateTime @default(now())
 }
 
 model Horario {

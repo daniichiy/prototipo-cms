@@ -2,7 +2,14 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import UnidadeForm from "@/components/cms/UnidadeForm";
 import { updateUnidade } from "@/app/cms/unidades/actions";
-import { reconstructPeriods } from "@/lib/horarios";
+import { salvarModeloHorario } from "@/app/cms/horarios/actions";
+import {
+  parsePeriodos,
+  reconstructPeriods,
+  TIPO_ATENDIMENTO,
+  TIPO_FUNCIONAMENTO,
+} from "@/lib/horarios";
+import { ROTULO_CENTRAL } from "@/lib/contato";
 
 export default async function EditarUnidadePage({
   params,
@@ -12,7 +19,7 @@ export default async function EditarUnidadePage({
   const { id: idParam } = await params;
   const id = Number(idParam);
 
-  const [ponto, orgaos, tiposPonto, municipios, servicosCatalogo] =
+  const [ponto, orgaos, municipios, servicosCatalogo, modelos, outrosLocais] =
     await Promise.all([
       prisma.pontoAtendimento.findUnique({
         where: { id },
@@ -20,24 +27,35 @@ export default async function EditarUnidadePage({
           endereco: true,
           responsaveis: { include: { pessoa: true } },
           canais: true,
-          horarios: true,
+          horarios: { include: { tipoHorario: true } },
           servicos: true,
         },
       }),
       prisma.orgao.findMany({ orderBy: { nome: "asc" } }),
-      prisma.tipoPonto.findMany({ orderBy: { nome: "asc" } }),
       prisma.municipio.findMany({ orderBy: { nome: "asc" } }),
       prisma.servico.findMany({ orderBy: { nome: "asc" } }),
+      prisma.modeloHorario.findMany({ orderBy: { nome: "asc" } }),
+      prisma.pontoAtendimento.findMany({
+        where: { id: { not: id } },
+        orderBy: { nome: "asc" },
+        include: { orgao: true },
+      }),
     ]);
 
   if (!ponto) notFound();
 
-  const telefoneCanal = ponto.canais.find(
-    (c) => c.tipo === "telefone" && c.rotulo === "Telefone"
+  const canalCentralTelefone = ponto.canais.find(
+    (c) => c.rotulo === ROTULO_CENTRAL && c.tipo === "telefone"
   );
-  const canaisRestantes = ponto.canais
-    .filter((c) => c.id !== telefoneCanal?.id)
+  const canalCentralEmail = ponto.canais.find(
+    (c) => c.rotulo === ROTULO_CENTRAL && c.tipo === "email"
+  );
+  const canaisAdicionais = ponto.canais
+    .filter((c) => c.rotulo !== ROTULO_CENTRAL)
     .map((c) => ({ tipo: c.tipo, rotulo: c.rotulo, valor: c.valor }));
+
+  const horariosDoTipo = (slug: string) =>
+    ponto.horarios.filter((h) => h.tipoHorario.slug === slug);
 
   const updateUnidadeComId = updateUnidade.bind(null, id);
 
@@ -45,46 +63,52 @@ export default async function EditarUnidadePage({
     <div className="mx-auto max-w-4xl">
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-navy-900">
-          Editar Unidade — {ponto.nome}
+          Editar Local de Atendimento — {ponto.nome}
         </h2>
         <p className="text-sm text-slate-500">
-          Atualize os dados da unidade e salve as alterações.
+          Atualize os dados do local e salve as alterações.
         </p>
       </div>
 
       <UnidadeForm
         action={updateUnidadeComId}
         orgaos={orgaos}
-        tiposPonto={tiposPonto}
         municipios={municipios}
         servicosCatalogo={servicosCatalogo}
+        modelosHorario={modelos.map((m) => ({
+          id: m.id,
+          nome: m.nome,
+          periodos: parsePeriodos(m.periodosJson),
+        }))}
+        outrosLocais={outrosLocais.map((u) => ({
+          id: u.id,
+          nome: u.nome,
+          sublabel: u.orgao.sigla,
+        }))}
+        salvarModeloHorario={salvarModeloHorario}
         submitLabel="Salvar Alterações"
         initialData={{
           nome: ponto.nome,
-          slug: ponto.slug,
           orgaoId: ponto.orgaoId,
-          tipoPontoId: ponto.tipoPontoId,
-          identificadorExterno: ponto.identificadorExterno ?? "",
           ativo: ponto.ativo,
-          logradouro: ponto.endereco?.logradouro ?? "",
-          numero: ponto.endereco?.numero ?? "",
+          endereco: ponto.endereco?.logradouro ?? "",
           complemento: ponto.endereco?.complemento ?? "",
           bairro: ponto.endereco?.bairro ?? "",
           cep: ponto.endereco?.cep ?? "",
           municipioId: ponto.endereco?.municipioId ?? 0,
-          iframeMapa: ponto.endereco?.iframeMapa ?? "",
-          urlMapa: ponto.endereco?.urlMapa ?? "",
-          latitude: ponto.endereco?.latitude?.toString() ?? "",
-          longitude: ponto.endereco?.longitude?.toString() ?? "",
+          sourceMapa: ponto.endereco?.sourceMapa ?? "",
           responsavelNome: ponto.responsaveis[0]?.pessoa.nome ?? "",
-          telefone: telefoneCanal?.valor ?? "",
-          canais: canaisRestantes,
-          periods: reconstructPeriods(ponto.horarios),
-          servicos: ponto.servicos.map((s) => ({
-            servicoId: s.servicoId,
-            atendimento: s.atendimento,
-            agendamento: s.agendamento,
-          })),
+          centralAtendimento: Boolean(canalCentralTelefone || canalCentralEmail),
+          telefone: canalCentralTelefone?.valor ?? "",
+          email: canalCentralEmail?.valor ?? "",
+          canais: canaisAdicionais,
+          periodosFuncionamento: reconstructPeriods(
+            horariosDoTipo(TIPO_FUNCIONAMENTO)
+          ),
+          periodosAtendimento: reconstructPeriods(
+            horariosDoTipo(TIPO_ATENDIMENTO)
+          ),
+          servicos: ponto.servicos.map((s) => ({ servicoId: s.servicoId })),
         }}
       />
     </div>

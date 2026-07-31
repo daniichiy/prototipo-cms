@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const colecoes = [
   { nome: "Órgãos", href: "/cms/orgaos" },
   { nome: "Unidades", href: "/cms/unidades" },
+  { nome: "Horários", href: "/cms/horarios" },
 ];
 
 export default function Sidebar() {

@@ -1,3 +1,5 @@
+import { DIAS_SEMANA } from "@/lib/masks";
+
 export type PeriodoInput = {
   dias: number[];
   temIntervalo: boolean;
@@ -6,6 +8,25 @@ export type PeriodoInput = {
   inicioTarde: string;
   fimTarde: string;
 };
+
+export const PERIODO_VAZIO: PeriodoInput = {
+  dias: [],
+  temIntervalo: false,
+  inicioManha: "",
+  fimManha: "",
+  inicioTarde: "",
+  fimTarde: "",
+};
+
+// Os dois horários pedidos na pesquisa: o local pode estar em funcionamento
+// (portas abertas) em uma faixa e atender o cidadão em outra.
+export const TIPO_FUNCIONAMENTO = "funcionamento";
+export const TIPO_ATENDIMENTO = "atendimento";
+
+export const TIPOS_HORARIO = [
+  { slug: TIPO_FUNCIONAMENTO, nome: "Horário de funcionamento" },
+  { slug: TIPO_ATENDIMENTO, nome: "Horário de atendimento" },
+];
 
 type HorarioRow = {
   diaSemana: number;
@@ -72,4 +93,85 @@ export function reconstructPeriods(horarios: HorarioRow[]): PeriodoInput[] {
   }
 
   return periods;
+}
+
+export function buildHorarioRows(
+  periods: PeriodoInput[],
+  tipoHorarioId: number
+) {
+  const rows: {
+    diaSemana: number;
+    inicio: string;
+    fim: string;
+    periodo: string | null;
+    tipoHorarioId: number;
+  }[] = [];
+
+  for (const periodo of periods) {
+    if (!periodo.inicioManha || !periodo.fimTarde) continue;
+    for (const dia of periodo.dias) {
+      if (periodo.temIntervalo) {
+        rows.push({
+          diaSemana: dia,
+          inicio: periodo.inicioManha,
+          fim: periodo.fimManha,
+          periodo: "manha",
+          tipoHorarioId,
+        });
+        rows.push({
+          diaSemana: dia,
+          inicio: periodo.inicioTarde,
+          fim: periodo.fimTarde,
+          periodo: "tarde",
+          tipoHorarioId,
+        });
+      } else {
+        rows.push({
+          diaSemana: dia,
+          inicio: periodo.inicioManha,
+          fim: periodo.fimTarde,
+          periodo: null,
+          tipoHorarioId,
+        });
+      }
+    }
+  }
+
+  return rows;
+}
+
+export function parsePeriodos(json: string): PeriodoInput[] {
+  try {
+    const dados = JSON.parse(json);
+    return Array.isArray(dados) ? (dados as PeriodoInput[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rotuloDias(dias: number[]): string {
+  if (dias.length === 0) return "sem dias";
+  const ordenados = [...dias].sort((a, b) => a - b);
+  const nomes = ordenados.map(
+    (d) => DIAS_SEMANA.find((x) => x.valor === d)?.label ?? String(d)
+  );
+  const sequencial = ordenados.every(
+    (d, i) => i === 0 || d === ordenados[i - 1] + 1
+  );
+  if (sequencial && ordenados.length > 2) {
+    return `${nomes[0]} a ${nomes[nomes.length - 1]}`;
+  }
+  return nomes.join(", ");
+}
+
+// Ex.: "Segunda a Sexta, 07:30–11:30 e 13:30–17:30"
+export function resumoPeriodo(periodo: PeriodoInput): string {
+  const faixas = periodo.temIntervalo
+    ? `${periodo.inicioManha}–${periodo.fimManha} e ${periodo.inicioTarde}–${periodo.fimTarde}`
+    : `${periodo.inicioManha}–${periodo.fimTarde}`;
+  return `${rotuloDias(periodo.dias)}, ${faixas}`;
+}
+
+export function resumoPeriodos(periodos: PeriodoInput[]): string {
+  return periodos.map(resumoPeriodo).join(" | ");
 }

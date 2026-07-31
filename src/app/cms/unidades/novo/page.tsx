@@ -1,34 +1,50 @@
 import { prisma } from "@/lib/prisma";
 import UnidadeForm from "@/components/cms/UnidadeForm";
 import { createUnidade } from "@/app/cms/unidades/actions";
+import { salvarModeloHorario } from "@/app/cms/horarios/actions";
+import { parsePeriodos } from "@/lib/horarios";
 
 export default async function NovaUnidadePage() {
-  const [orgaos, tiposPonto, municipios, servicosCatalogo, tipoUnidadePadrao] =
+  const [orgaos, municipios, servicosCatalogo, modelos, outrosLocais] =
     await Promise.all([
       prisma.orgao.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
-      prisma.tipoPonto.findMany({ orderBy: { nome: "asc" } }),
       prisma.municipio.findMany({ orderBy: { nome: "asc" } }),
       prisma.servico.findMany({ orderBy: { nome: "asc" } }),
-      prisma.tipoPonto.findFirst({ where: { nome: "Unidade" } }),
+      prisma.modeloHorario.findMany({ orderBy: { nome: "asc" } }),
+      prisma.pontoAtendimento.findMany({
+        orderBy: { nome: "asc" },
+        include: { orgao: true },
+      }),
     ]);
 
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-navy-900">Nova Unidade / Local de Atendimento</h2>
+        <h2 className="text-xl font-semibold text-navy-900">
+          Novo Local de Atendimento
+        </h2>
         <p className="text-sm text-slate-500">
-          Preencha os dados abaixo para cadastrar uma nova unidade.
+          Preencha os dados abaixo para cadastrar um novo local de atendimento.
         </p>
       </div>
 
       <UnidadeForm
         action={createUnidade}
         orgaos={orgaos}
-        tiposPonto={tiposPonto}
         municipios={municipios}
         servicosCatalogo={servicosCatalogo}
-        defaultTipoPontoId={tipoUnidadePadrao?.id}
-        submitLabel="Cadastrar Unidade"
+        modelosHorario={modelos.map((m) => ({
+          id: m.id,
+          nome: m.nome,
+          periodos: parsePeriodos(m.periodosJson),
+        }))}
+        outrosLocais={outrosLocais.map((u) => ({
+          id: u.id,
+          nome: u.nome,
+          sublabel: u.orgao.sigla,
+        }))}
+        salvarModeloHorario={salvarModeloHorario}
+        submitLabel="Cadastrar Local de Atendimento"
       />
     </div>
   );

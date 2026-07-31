@@ -69,13 +69,57 @@ async function main() {
   );
   const [tipoUnidade, tipoUnidadeRegional, tipoDepartamento] = tiposPonto;
 
-  // ---------- Tipo de Horário ----------
-  let tipoHorarioPadrao = await prisma.tipoHorario.findFirst({
-    where: { nome: "Horário de Funcionamento" },
-  });
-  if (!tipoHorarioPadrao) {
-    tipoHorarioPadrao = await prisma.tipoHorario.create({
-      data: { nome: "Horário de Funcionamento" },
+  // ---------- Tipos de Horário (funcionamento e atendimento) ----------
+  const [tipoFuncionamento, tipoAtendimento] = await Promise.all(
+    [
+      { slug: "funcionamento", nome: "Horário de funcionamento" },
+      { slug: "atendimento", nome: "Horário de atendimento" },
+    ].map((t) =>
+      prisma.tipoHorario.upsert({
+        where: { slug: t.slug },
+        update: { nome: t.nome },
+        create: t,
+      })
+    )
+  );
+
+  // ---------- Horários reutilizáveis ----------
+  const modelosHorario = [
+    {
+      nome: "Expediente padrão — 07:30 às 17:30",
+      periodos: [
+        {
+          dias: [1, 2, 3, 4, 5],
+          temIntervalo: true,
+          inicioManha: "07:30",
+          fimManha: "11:30",
+          inicioTarde: "13:30",
+          fimTarde: "17:30",
+        },
+      ],
+    },
+    {
+      nome: "Atendimento ao público — 08:00 às 16:00",
+      periodos: [
+        {
+          dias: [1, 2, 3, 4, 5],
+          temIntervalo: false,
+          inicioManha: "08:00",
+          fimManha: "",
+          inicioTarde: "",
+          fimTarde: "16:00",
+        },
+      ],
+    },
+  ];
+  for (const modelo of modelosHorario) {
+    await prisma.modeloHorario.upsert({
+      where: { nome: modelo.nome },
+      update: { periodosJson: JSON.stringify(modelo.periodos) },
+      create: {
+        nome: modelo.nome,
+        periodosJson: JSON.stringify(modelo.periodos),
+      },
     });
   }
 
@@ -223,18 +267,21 @@ async function main() {
     endereco: {
       municipioId: number;
       logradouro: string;
-      numero: string;
       complemento?: string;
       bairro: string;
       cep: string;
-      iframeMapa: string;
-      urlMapa?: string;
-      latitude?: number;
-      longitude?: number;
+      sourceMapa: string;
     };
     responsavel: { pessoaId: number; cargo: string };
     canais: { tipo: string; rotulo: string; valor: string }[];
     horarios: {
+      diaSemana: number;
+      inicio: string;
+      fim: string;
+      periodo?: string;
+    }[];
+    // quando omitido, o atendimento segue o mesmo horário do funcionamento
+    horariosAtendimento?: {
       diaSemana: number;
       inicio: string;
       fim: string;
@@ -246,7 +293,26 @@ async function main() {
     const existente = await prisma.pontoAtendimento.findUnique({
       where: { slug },
     });
-    if (existente) return existente;
+    if (existente) {
+      // unidade criada antes da separação dos dois horários: garante o
+      // horário de atendimento
+      const jaTemAtendimento = await prisma.horario.count({
+        where: {
+          pontoAtendimentoId: existente.id,
+          tipoHorarioId: tipoAtendimento.id,
+        },
+      });
+      if (!jaTemAtendimento) {
+        await prisma.horario.createMany({
+          data: (params.horariosAtendimento ?? params.horarios).map((h) => ({
+            ...h,
+            pontoAtendimentoId: existente.id,
+            tipoHorarioId: tipoAtendimento.id,
+          })),
+        });
+      }
+      return existente;
+    }
 
     return prisma.pontoAtendimento.create({
       data: {
@@ -264,10 +330,16 @@ async function main() {
         },
         canais: { create: params.canais },
         horarios: {
-          create: params.horarios.map((h) => ({
-            ...h,
-            tipoHorarioId: tipoHorarioPadrao!.id,
-          })),
+          create: [
+            ...params.horarios.map((h) => ({
+              ...h,
+              tipoHorarioId: tipoFuncionamento.id,
+            })),
+            ...(params.horariosAtendimento ?? params.horarios).map((h) => ({
+              ...h,
+              tipoHorarioId: tipoAtendimento.id,
+            })),
+          ],
         },
         servicos: { create: params.servicos },
       },
@@ -280,19 +352,19 @@ async function main() {
     tipoPontoId: tipoUnidade.id,
     endereco: {
       municipioId: campoGrande.id,
-      logradouro: "Rua Engenheiro Luthero Lopes",
-      numero: "36",
+      logradouro: "Rua Engenheiro Luthero Lopes, 36",
       bairro: "Aero Rancho",
       cep: "79051-000",
-      iframeMapa:
-        '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3735.0!2d-54.6!3d-20.5" width="600" height="450" style="border:0;" allowfullscreen loading="lazy"></iframe>',
-      urlMapa: "https://maps.app.goo.gl/exemplo-hospital-regional",
-      latitude: -20.5186,
-      longitude: -54.6357,
+      sourceMapa:
+        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3735.0!2d-54.6!3d-20.5",
     },
     responsavel: { pessoaId: maria.id, cargo: "Diretora Geral" },
     canais: [
-      { tipo: "telefone", rotulo: "Central", valor: "(67) 3378-2600" },
+      {
+        tipo: "telefone",
+        rotulo: "Central de Atendimento",
+        valor: "(67) 3378-2600",
+      },
       { tipo: "whatsapp", rotulo: "Ouvidoria", valor: "(67) 99999-1234" },
       { tipo: "email", rotulo: "Contato", valor: "hrms@saude.ms.gov.br" },
     ],
@@ -302,6 +374,14 @@ async function main() {
       { diaSemana: 3, inicio: "07:00", fim: "19:00" },
       { diaSemana: 4, inicio: "07:00", fim: "19:00" },
       { diaSemana: 5, inicio: "07:00", fim: "19:00" },
+    ],
+    // o hospital funciona das 07h às 19h, mas atende o cidadão até as 17h
+    horariosAtendimento: [
+      { diaSemana: 1, inicio: "07:00", fim: "17:00" },
+      { diaSemana: 2, inicio: "07:00", fim: "17:00" },
+      { diaSemana: 3, inicio: "07:00", fim: "17:00" },
+      { diaSemana: 4, inicio: "07:00", fim: "17:00" },
+      { diaSemana: 5, inicio: "07:00", fim: "17:00" },
     ],
     servicos: [
       { servicoId: vacinacao.id, agendamento: true, atendimento: true },
@@ -319,21 +399,25 @@ async function main() {
     tipoPontoId: tipoUnidadeRegional.id,
     endereco: {
       municipioId: dourados.id,
-      logradouro: "Avenida Marcelino Pires",
-      numero: "1520",
+      logradouro: "Avenida Marcelino Pires, 1520",
       complemento: "Centro",
       bairro: "Centro",
       cep: "79802-021",
-      iframeMapa:
-        '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3675.0!2d-54.8!3d-22.2" width="600" height="450" style="border:0;" allowfullscreen loading="lazy"></iframe>',
-      urlMapa: "https://maps.app.goo.gl/exemplo-procon-dourados",
-      latitude: -22.2211,
-      longitude: -54.806,
+      sourceMapa:
+        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3675.0!2d-54.8!3d-22.2",
     },
     responsavel: { pessoaId: joao.id, cargo: "Coordenador Regional" },
     canais: [
-      { tipo: "telefone", rotulo: "Atendimento", valor: "(67) 3411-7700" },
-      { tipo: "email", rotulo: "Contato", valor: "procon.dourados@sejusp.ms.gov.br" },
+      {
+        tipo: "telefone",
+        rotulo: "Central de Atendimento",
+        valor: "(67) 3411-7700",
+      },
+      {
+        tipo: "email",
+        rotulo: "Central de Atendimento",
+        valor: "procon.dourados@sejusp.ms.gov.br",
+      },
     ],
     horarios: [
       { diaSemana: 1, inicio: "07:30", fim: "11:30", periodo: "manha" },
@@ -359,15 +443,11 @@ async function main() {
     tipoPontoId: tipoDepartamento.id,
     endereco: {
       municipioId: tresLagoas.id,
-      logradouro: "Avenida Capitão Olinto Mancini",
-      numero: "1230",
+      logradouro: "Avenida Capitão Olinto Mancini, 1230",
       bairro: "Vila Alegre",
       cep: "79641-020",
-      iframeMapa:
-        '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3655.0!2d-51.7!3d-20.7" width="600" height="450" style="border:0;" allowfullscreen loading="lazy"></iframe>',
-      urlMapa: "https://maps.app.goo.gl/exemplo-agepan-tres-lagoas",
-      latitude: -20.7511,
-      longitude: -51.6784,
+      sourceMapa:
+        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3655.0!2d-51.7!3d-20.7",
     },
     responsavel: { pessoaId: ana.id, cargo: "Gerente de Unidade" },
     canais: [
