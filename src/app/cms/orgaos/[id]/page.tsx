@@ -75,9 +75,12 @@ export default async function OrgaoInformacoesPage({
 
       <div className="space-y-6">
         {/* ---------------------------------------------- Informações */}
+        {/* Um único "Editar" cobre as três seções: o formulário de edição
+            reúne órgão, contatos e endereço na mesma página. */}
         <Card
           titulo="Informações do Órgão"
           acaoHref={`/cms/orgaos/${orgao.id}/editar`}
+          acaoLabel="Editar"
         >
           <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-5">
@@ -103,7 +106,7 @@ export default async function OrgaoInformacoesPage({
         </Card>
 
         {/* -------------------------------------------------- Contatos */}
-        <Card titulo="Contatos" acaoHref={`/cms/orgaos/${orgao.id}/contato`}>
+        <Card titulo="Contatos">
           <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-5">
               <Dado label="Telefone">
@@ -134,10 +137,7 @@ export default async function OrgaoInformacoesPage({
         </Card>
 
         {/* ------------------------------------------------- Endereço */}
-        <Card
-          titulo="Endereço do Órgão"
-          acaoHref={`/cms/orgaos/${orgao.id}/endereco`}
-        >
+        <Card titulo="Endereço do Órgão">
           {endereco ? (
             <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-5">
