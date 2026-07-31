@@ -41,6 +41,7 @@ export default async function OrgaoInformacoesPage({
       where: { id },
       include: {
         contato: true,
+        canais: { orderBy: { id: "asc" } },
         endereco: { include: { municipio: true } },
         setores: { orderBy: { nome: "asc" } },
         gestores: { orderBy: { nome: "asc" } },
@@ -109,31 +110,41 @@ export default async function OrgaoInformacoesPage({
         <Card titulo="Contatos">
           <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-5">
+              <Dado label="Responsável">
+                {contato?.responsavel ?? <NaoCadastrado />}
+              </Dado>
+            </div>
+            <div className="space-y-5">
               <Dado label="Telefone">
                 {contato?.telefone ?? <NaoCadastrado />}
               </Dado>
-              <Dado label="Email">{contato?.email ?? <NaoCadastrado />}</Dado>
             </div>
             <div className="space-y-5">
-              <Dado label="Facebook">
-                <Quebravel valor={contato?.facebook} />
-              </Dado>
-              <Dado label="Whatsapp">
-                {contato?.whatsapp ?? <NaoCadastrado />}
-              </Dado>
-              <Dado label="Instagram">
-                <Quebravel valor={contato?.instagram} />
-              </Dado>
-            </div>
-            <div className="space-y-5">
-              <Dado label="Twitter">
-                <Quebravel valor={contato?.twitter} />
-              </Dado>
-              <Dado label="Youtube">
-                <Quebravel valor={contato?.youtube} />
+              <Dado label="Email">
+                <Quebravel valor={contato?.email} />
               </Dado>
             </div>
           </dl>
+
+          <div className="mt-6 border-t border-slate-100 pt-5">
+            <p className="text-xs font-bold uppercase tracking-wide text-navy-900">
+              Canais de atendimento
+            </p>
+            {orgao.canais.length > 0 ? (
+              <ul className="mt-2 space-y-1">
+                {orgao.canais.map((canal) => (
+                  <li key={canal.id} className="text-sm text-slate-500">
+                    <span className="uppercase">{canal.rotulo}:</span>{" "}
+                    <span className="break-all">{canal.valor}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm">
+                <NaoCadastrado />
+              </p>
+            )}
+          </div>
         </Card>
 
         {/* ------------------------------------------------- Endereço */}

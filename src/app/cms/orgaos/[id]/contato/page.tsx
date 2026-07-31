@@ -14,7 +14,7 @@ export default async function GerenciarContatoPage({
 
   const orgao = await prisma.orgao.findUnique({
     where: { id },
-    include: { contato: true },
+    include: { contato: true, canais: true },
   });
   if (!orgao) notFound();
 
@@ -33,13 +33,14 @@ export default async function GerenciarContatoPage({
         action={upsertContato.bind(null, id)}
         cancelHref={`/cms/orgaos/${id}`}
         initialData={{
+          responsavel: contato?.responsavel ?? "",
           telefone: contato?.telefone ?? "",
           email: contato?.email ?? "",
-          instagram: contato?.instagram ?? "",
-          whatsapp: contato?.whatsapp ?? "",
-          facebook: contato?.facebook ?? "",
-          twitter: contato?.twitter ?? "",
-          youtube: contato?.youtube ?? "",
+          canais: orgao.canais.map((c) => ({
+            tipo: c.tipo,
+            rotulo: c.rotulo,
+            valor: c.valor,
+          })),
         }}
       />
     </div>

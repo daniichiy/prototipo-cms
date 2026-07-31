@@ -177,12 +177,34 @@ async function main() {
     update: {},
     create: {
       orgaoId: ses.id,
+      responsavel: "Gabinete da Secretaria",
       telefone: "(67) 3318-1700",
       email: "gabinete@saude.ms.gov.br",
-      whatsapp: "(67) 99900-1700",
-      instagram: "https://www.instagram.com/sesms",
-      facebook: "https://www.facebook.com/sesms",
     },
+  });
+
+  await prisma.orgaoCanalContato.deleteMany({ where: { orgaoId: ses.id } });
+  await prisma.orgaoCanalContato.createMany({
+    data: [
+      {
+        orgaoId: ses.id,
+        tipo: "whatsapp",
+        rotulo: "WhatsApp",
+        valor: "(67) 99900-1700",
+      },
+      {
+        orgaoId: ses.id,
+        tipo: "outro",
+        rotulo: "Instagram",
+        valor: "https://www.instagram.com/sesms",
+      },
+      {
+        orgaoId: ses.id,
+        tipo: "outro",
+        rotulo: "Facebook",
+        valor: "https://www.facebook.com/sesms",
+      },
+    ],
   });
 
   await prisma.orgaoEndereco.upsert({

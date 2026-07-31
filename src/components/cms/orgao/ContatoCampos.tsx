@@ -1,17 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Campo, inputClass } from "@/components/cms/form-ui";
+import {
+  Campo,
+  inputClass,
+  botaoAdicionarClass,
+} from "@/components/cms/form-ui";
 import { maskPhone } from "@/lib/masks";
+import {
+  TIPOS_CANAL,
+  TIPO_CANAL_OUTRO,
+  rotuloDoTipoCanal,
+} from "@/lib/contato";
+
+export type CanalContatoInput = { tipo: string; rotulo: string; valor: string };
 
 export type ContatoInitialData = {
+  responsavel: string;
   telefone: string;
   email: string;
-  instagram: string;
-  whatsapp: string;
-  facebook: string;
-  twitter: string;
-  youtube: string;
+  canais: CanalContatoInput[];
 };
 
 export default function ContatoCampos({
@@ -22,94 +30,145 @@ export default function ContatoCampos({
   obrigatorio?: boolean;
 }) {
   const [telefone, setTelefone] = useState(initialData?.telefone ?? "");
-  const [whatsapp, setWhatsapp] = useState(initialData?.whatsapp ?? "");
+  const [canais, setCanais] = useState<CanalContatoInput[]>(
+    (initialData?.canais ?? []).map((c) => ({
+      tipo: c.tipo ?? "telefone",
+      rotulo: c.rotulo ?? "",
+      valor: c.valor ?? "",
+    }))
+  );
+
+  function addCanal() {
+    setCanais((prev) => [
+      ...prev,
+      { tipo: "telefone", rotulo: rotuloDoTipoCanal("telefone"), valor: "" },
+    ]);
+  }
+  function updateCanal(index: number, patch: Partial<CanalContatoInput>) {
+    setCanais((prev) =>
+      prev.map((c, i) => (i === index ? { ...c, ...patch } : c))
+    );
+  }
+  // O próprio tipo vira o rótulo do canal; só "Outro" tem rótulo digitado.
+  function updateTipoCanal(index: number, tipo: string) {
+    updateCanal(index, {
+      tipo,
+      rotulo: tipo === TIPO_CANAL_OUTRO ? "" : rotuloDoTipoCanal(tipo),
+    });
+  }
+  function removeCanal(index: number) {
+    setCanais((prev) => prev.filter((_, i) => i !== index));
+  }
 
   const marca = obrigatorio ? "(Obrigatório)" : "(Opcional)";
 
   return (
     <div className="space-y-5">
-      <Campo
-        label="Telefone"
-        required={obrigatorio}
-        hint={`Informe um número de telefone ${marca}`}
-      >
-        <input
-          type="text"
-          name="telefone"
-          value={telefone}
-          onChange={(e) => setTelefone(maskPhone(e.target.value))}
-          placeholder="(00) 0000-0000"
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Campo
+          label="Responsável"
+          className="sm:col-span-2"
+          hint="Nome da pessoa responsável pelo órgão"
+        >
+          <input
+            type="text"
+            name="responsavel"
+            defaultValue={initialData?.responsavel ?? ""}
+            className={inputClass}
+          />
+        </Campo>
+
+        <Campo
+          label="Telefone"
           required={obrigatorio}
-          className={inputClass}
-        />
-      </Campo>
+          hint={`Informe um número de telefone ${marca}`}
+        >
+          <input
+            type="text"
+            name="telefone"
+            value={telefone}
+            onChange={(e) => setTelefone(maskPhone(e.target.value))}
+            placeholder="(00) 0000-0000"
+            required={obrigatorio}
+            className={inputClass}
+          />
+        </Campo>
 
-      <Campo
-        label="Email"
-        required={obrigatorio}
-        hint={`Informe um email válido ${marca}`}
-      >
-        <input
-          type="email"
-          name="email"
-          defaultValue={initialData?.email ?? ""}
+        <Campo
+          label="Email"
           required={obrigatorio}
-          className={inputClass}
-        />
-      </Campo>
+          hint={`Informe um email válido ${marca}`}
+        >
+          <input
+            type="email"
+            name="email"
+            defaultValue={initialData?.email ?? ""}
+            placeholder="contato@orgao.ms.gov.br"
+            required={obrigatorio}
+            className={inputClass}
+          />
+        </Campo>
+      </div>
 
-      <Campo
-        label="Facebook"
-        hint="Insira a URL do perfil no facebook (Opcional)"
-      >
-        <input
-          type="url"
-          name="facebook"
-          defaultValue={initialData?.facebook ?? ""}
-          className={inputClass}
-        />
-      </Campo>
+      <div className="space-y-3">
+        <div>
+          <p className="text-sm font-medium text-slate-700">
+            Canais de atendimento
+          </p>
+          <p className="text-xs text-slate-400">
+            WhatsApp, ouvidoria, redes sociais e outros canais (Opcional)
+          </p>
+        </div>
 
-      <Campo label="Whatsapp" hint="Informe um número do whatsapp (Opcional)">
-        <input
-          type="text"
-          name="whatsapp"
-          value={whatsapp}
-          onChange={(e) => setWhatsapp(maskPhone(e.target.value))}
-          placeholder="(00) 00000-0000"
-          className={inputClass}
-        />
-      </Campo>
+        {canais.map((canal, i) => (
+          <div key={i} className="flex flex-wrap items-center gap-2">
+            <select
+              value={canal.tipo}
+              onChange={(e) => updateTipoCanal(i, e.target.value)}
+              className={`${inputClass} w-36`}
+            >
+              {TIPOS_CANAL.map((t) => (
+                <option key={t.valor} value={t.valor}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            {canal.tipo === TIPO_CANAL_OUTRO && (
+              <input
+                type="text"
+                placeholder="Rótulo (ex: Instagram)"
+                value={canal.rotulo}
+                onChange={(e) => updateCanal(i, { rotulo: e.target.value })}
+                className={`${inputClass} min-w-[10rem] flex-1`}
+              />
+            )}
+            <input
+              type="text"
+              placeholder="Valor"
+              value={canal.valor}
+              onChange={(e) => updateCanal(i, { valor: e.target.value })}
+              className={`${inputClass} min-w-[10rem] flex-1`}
+            />
+            <button
+              type="button"
+              onClick={() => removeCanal(i)}
+              className="text-sm text-red-600 hover:underline"
+            >
+              Remover
+            </button>
+          </div>
+        ))}
 
-      <Campo
-        label="Instagram"
-        hint="Insira a URL do perfil no instagram (Opcional)"
-      >
-        <input
-          type="url"
-          name="instagram"
-          defaultValue={initialData?.instagram ?? ""}
-          className={inputClass}
-        />
-      </Campo>
+        <button type="button" onClick={addCanal} className={botaoAdicionarClass}>
+          + adicionar canal
+        </button>
+      </div>
 
-      <Campo label="Twitter" hint="Insira a URL do perfil no twitter (Opcional)">
-        <input
-          type="url"
-          name="twitter"
-          defaultValue={initialData?.twitter ?? ""}
-          className={inputClass}
-        />
-      </Campo>
-
-      <Campo label="Youtube" hint="Insira a URL do perfil no youtube (Opcional)">
-        <input
-          type="url"
-          name="youtube"
-          defaultValue={initialData?.youtube ?? ""}
-          className={inputClass}
-        />
-      </Campo>
+      <input
+        type="hidden"
+        name="canaisContatoJson"
+        value={JSON.stringify(canais)}
+      />
     </div>
   );
 }

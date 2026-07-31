@@ -64,7 +64,7 @@ export default function OrgaoForm({
         <>
           <Secao
             titulo="Informações de Contato"
-            subtitulo="Telefone, email e redes sociais do órgão. Preencha telefone e email para salvar o contato."
+            subtitulo="Responsável, telefone e email do órgão, além dos canais de atendimento. Preencha telefone e email para salvar o contato."
           >
             <ContatoCampos initialData={contatoInitial} obrigatorio={false} />
           </Secao>

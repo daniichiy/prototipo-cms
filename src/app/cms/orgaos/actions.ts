@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slugify";
 import { nomeDoOrgao, serializeDiasSemana } from "@/lib/orgao";
+import { TIPO_CANAL_OUTRO, rotuloDoTipoCanal } from "@/lib/contato";
 
 function texto(formData: FormData, campo: string) {
   return String(formData.get(campo) ?? "").trim();
@@ -63,7 +64,8 @@ export async function createOrgao(formData: FormData) {
       nome: v.nome,
       sigla: v.sigla,
       slug,
-      contato: contato ? { create: contato } : undefined,
+      contato: contato ? { create: contato.contato } : undefined,
+      canais: contato?.canais.length ? { create: contato.canais } : undefined,
       endereco: endereco ? { create: endereco } : undefined,
     },
   });
@@ -86,7 +88,11 @@ export async function updateOrgao(id: number, formData: FormData) {
       sigla: v.sigla,
       slug,
       contato: contato
-        ? { upsert: { create: contato, update: contato } }
+        ? { upsert: { create: contato.contato, update: contato.contato } }
+        : undefined,
+      // os canais são substituídos por inteiro a cada salvamento
+      canais: contato
+        ? { deleteMany: {}, create: contato.canais }
         : undefined,
       endereco: endereco
         ? { upsert: { create: endereco, update: endereco } }
@@ -114,34 +120,45 @@ export async function deleteOrgao(id: number) {
 
 // -------------------------------------------------------------- Contato
 
-const CAMPOS_CONTATO = [
-  "telefone",
-  "email",
-  "whatsapp",
-  "instagram",
-  "facebook",
-  "twitter",
-  "youtube",
-] as const;
+type CanalInput = { tipo: string; rotulo: string; valor: string };
+
+/** Canais adicionais do órgão; fora de "Outro", o tipo é o próprio rótulo. */
+function parseCanais(formData: FormData): CanalInput[] {
+  let dados: unknown;
+  try {
+    dados = JSON.parse(String(formData.get("canaisContatoJson") ?? "[]"));
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(dados)) return [];
+
+  return (dados as CanalInput[])
+    .filter((c) => String(c?.valor ?? "").trim())
+    .map((c) => ({
+      tipo: String(c.tipo ?? "").trim() || TIPO_CANAL_OUTRO,
+      rotulo:
+        c.tipo === TIPO_CANAL_OUTRO
+          ? String(c.rotulo ?? "").trim()
+          : rotuloDoTipoCanal(String(c.tipo ?? "")),
+      valor: String(c.valor).trim(),
+    }));
+}
 
 /** Retorna null quando nenhum campo de contato foi preenchido (seção opcional). */
 function parseContato(formData: FormData) {
-  const preenchido = CAMPOS_CONTATO.some((c) => texto(formData, c));
-  if (!preenchido) return null;
-
+  const responsavel = texto(formData, "responsavel");
   const telefone = texto(formData, "telefone");
   const email = texto(formData, "email");
+  const canais = parseCanais(formData);
+
+  if (!responsavel && !telefone && !email && canais.length === 0) return null;
+
   if (!telefone) throw new Error("Informe um número de telefone.");
   if (!email) throw new Error("Informe um email válido.");
 
   return {
-    telefone,
-    email,
-    whatsapp: textoOuNulo(formData, "whatsapp"),
-    instagram: textoOuNulo(formData, "instagram"),
-    facebook: textoOuNulo(formData, "facebook"),
-    twitter: textoOuNulo(formData, "twitter"),
-    youtube: textoOuNulo(formData, "youtube"),
+    contato: { responsavel: responsavel || null, telefone, email },
+    canais,
   };
 }
 
@@ -149,11 +166,17 @@ export async function upsertContato(orgaoId: number, formData: FormData) {
   const dados = parseContato(formData);
   if (!dados) throw new Error("Informe ao menos telefone e email.");
 
-  await prisma.orgaoContato.upsert({
-    where: { orgaoId },
-    update: dados,
-    create: { orgaoId, ...dados },
-  });
+  await prisma.$transaction([
+    prisma.orgaoContato.upsert({
+      where: { orgaoId },
+      update: dados.contato,
+      create: { orgaoId, ...dados.contato },
+    }),
+    prisma.orgaoCanalContato.deleteMany({ where: { orgaoId } }),
+    prisma.orgaoCanalContato.createMany({
+      data: dados.canais.map((c) => ({ orgaoId, ...c })),
+    }),
+  ]);
 
   revalidarOrgao(orgaoId);
   redirect(`/cms/orgaos/${orgaoId}`);

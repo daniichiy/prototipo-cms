@@ -40,6 +40,7 @@ model Orgao {
 
   pontosAtendimento PontoAtendimento[]
   contato           OrgaoContato?
+  canais            OrgaoCanalContato[]
   endereco          OrgaoEndereco?
   setores           Setor[]
   gestores          Gestor[]
@@ -47,16 +48,25 @@ model Orgao {
   sites             SiteRelacionado[]
 }
 
+// Contato principal do órgão: responsável, telefone e e-mail. Os demais canais
+// (WhatsApp, ouvidoria, redes...) ficam em OrgaoCanalContato, igual ao contato
+// do local de atendimento.
 model OrgaoContato {
-  id        Int     @id @default(autoincrement())
-  orgaoId   Int     @unique
-  telefone  String
-  email     String
-  whatsapp  String?
-  instagram String?
-  facebook  String?
-  twitter   String?
-  youtube   String?
+  id          Int     @id @default(autoincrement())
+  orgaoId     Int     @unique
+  responsavel String?
+  telefone    String
+  email       String
+
+  orgao Orgao @relation(fields: [orgaoId], references: [id], onDelete: Cascade)
+}
+
+model OrgaoCanalContato {
+  id      Int    @id @default(autoincrement())
+  orgaoId Int
+  tipo    String
+  rotulo  String
+  valor   String
 
   orgao Orgao @relation(fields: [orgaoId], references: [id], onDelete: Cascade)
 }

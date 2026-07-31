@@ -16,7 +16,7 @@ export default async function EditarOrgaoPage({
   const [orgao, municipios] = await Promise.all([
     prisma.orgao.findUnique({
       where: { id },
-      include: { contato: true, endereco: true },
+      include: { contato: true, canais: true, endereco: true },
     }),
     prisma.municipio.findMany({ orderBy: { nome: "asc" } }),
   ]);
@@ -54,13 +54,14 @@ export default async function EditarOrgaoPage({
         initialData={{ sigla: orgao.sigla }}
         municipios={municipios}
         contatoInitial={{
+          responsavel: c?.responsavel ?? "",
           telefone: c?.telefone ?? "",
           email: c?.email ?? "",
-          instagram: c?.instagram ?? "",
-          whatsapp: c?.whatsapp ?? "",
-          facebook: c?.facebook ?? "",
-          twitter: c?.twitter ?? "",
-          youtube: c?.youtube ?? "",
+          canais: orgao.canais.map((canal) => ({
+            tipo: canal.tipo,
+            rotulo: canal.rotulo,
+            valor: canal.valor,
+          })),
         }}
         enderecoInitial={{
           logradouro: e?.logradouro ?? "",
