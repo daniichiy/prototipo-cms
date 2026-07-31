@@ -8,6 +8,7 @@ import {
   Card,
   Dado,
   Booleano,
+  EtiquetaStatus,
   NaoCadastrado,
 } from "@/components/cms/orgao/leitura";
 import {
@@ -20,6 +21,10 @@ import {
 type Aba = "setores" | "gestores" | "usuarios" | "sites";
 const ABAS_VALIDAS: Aba[] = ["setores", "gestores", "usuarios", "sites"];
 
+// A seção de associações (setores, gestores, usuários e sites) está desativada.
+// Basta voltar para `true` para exibi-la novamente.
+const ASSOCIACOES_ATIVAS = false;
+
 export default async function OrgaoInformacoesPage({
   params,
   searchParams,
@@ -31,7 +36,7 @@ export default async function OrgaoInformacoesPage({
   const { aba } = await searchParams;
   const id = Number(idParam);
 
-  const [orgao, pessoas] = await Promise.all([
+  const [orgao, unidades, pessoas] = await Promise.all([
     prisma.orgao.findUnique({
       where: { id },
       include: {
@@ -42,6 +47,11 @@ export default async function OrgaoInformacoesPage({
         usuarios: { include: { pessoa: true }, orderBy: { id: "asc" } },
         sites: { orderBy: { titulo: "asc" } },
       },
+    }),
+    prisma.pontoAtendimento.findMany({
+      where: { orgaoId: id },
+      orderBy: { nome: "asc" },
+      include: { endereco: { include: { municipio: true } } },
     }),
     prisma.pessoa.findMany({ orderBy: { nome: "asc" } }),
   ]);
@@ -184,41 +194,106 @@ export default async function OrgaoInformacoesPage({
           )}
         </Card>
 
+        {/* -------------------------------------------------- Unidades */}
+        <Card
+          titulo={`Unidades (${unidades.length})`}
+          acaoHref="/cms/unidades/novo"
+          acaoLabel="+ Nova Unidade"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Nome</th>
+                  <th className="px-4 py-3">Endereço</th>
+                  <th className="px-4 py-3">Cidade</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unidades.map((u) => (
+                  <tr
+                    key={u.id}
+                    className="border-b border-slate-100 last:border-0"
+                  >
+                    <td className="px-4 py-3 font-medium text-navy-900">
+                      {u.nome}
+                      <p className="text-xs font-normal text-slate-400">
+                        /{u.slug}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {u.endereco?.logradouro ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {u.endereco?.municipio.nome ?? "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <EtiquetaStatus ativo={u.ativo} />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/cms/unidades/${u.id}/editar`}
+                        className="text-sm text-navy-800 hover:underline"
+                      >
+                        Editar
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+                {unidades.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-10 text-center text-slate-400"
+                    >
+                      Nenhuma unidade cadastrada para este órgão.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
         {/* ----------------------------------------------- Associações */}
-        <AssociacoesPanel
-          orgaoId={orgao.id}
-          abaInicial={abaInicial}
-          setores={orgao.setores.map((s) => ({
-            id: s.id,
-            sigla: s.sigla,
-            nome: s.nome,
-            ativo: s.ativo,
-          }))}
-          gestores={orgao.gestores.map((g) => ({
-            id: g.id,
-            nome: g.nome,
-            fotoUrl: g.fotoUrl,
-            ativo: g.ativo,
-          }))}
-          usuarios={orgao.usuarios.map((u) => ({
-            id: u.id,
-            nome: u.pessoa.nome,
-            cpf: u.pessoa.cpf,
-            perfil: u.perfil,
-            ativo: u.ativo,
-          }))}
-          sites={orgao.sites.map((s) => ({
-            id: s.id,
-            titulo: s.titulo,
-            link: s.link,
-            ativo: s.ativo,
-          }))}
-          pessoas={pessoas.map((p) => ({
-            id: p.id,
-            nome: p.nome,
-            cpf: p.cpf,
-          }))}
-        />
+        {ASSOCIACOES_ATIVAS && (
+          <AssociacoesPanel
+            orgaoId={orgao.id}
+            abaInicial={abaInicial}
+            setores={orgao.setores.map((s) => ({
+              id: s.id,
+              sigla: s.sigla,
+              nome: s.nome,
+              ativo: s.ativo,
+            }))}
+            gestores={orgao.gestores.map((g) => ({
+              id: g.id,
+              nome: g.nome,
+              fotoUrl: g.fotoUrl,
+              ativo: g.ativo,
+            }))}
+            usuarios={orgao.usuarios.map((u) => ({
+              id: u.id,
+              nome: u.pessoa.nome,
+              cpf: u.pessoa.cpf,
+              perfil: u.perfil,
+              ativo: u.ativo,
+            }))}
+            sites={orgao.sites.map((s) => ({
+              id: s.id,
+              titulo: s.titulo,
+              link: s.link,
+              ativo: s.ativo,
+            }))}
+            pessoas={pessoas.map((p) => ({
+              id: p.id,
+              nome: p.nome,
+              cpf: p.cpf,
+            }))}
+          />
+        )}
 
         <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm">
           <Link
