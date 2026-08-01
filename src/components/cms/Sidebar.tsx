@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// Horários (/cms/horarios) continua funcionando, mas fica fora do menu: é
+// acessada apenas pela URL.
 const colecoes = [
   { nome: "Órgãos", href: "/cms/orgaos" },
   { nome: "Unidades", href: "/cms/unidades" },
-  { nome: "Horários", href: "/cms/horarios" },
 ];
 
 export default function Sidebar() {
