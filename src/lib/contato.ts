@@ -1,7 +1,7 @@
-// Rótulo fixo dos canais criados pelo bloco "Central de Atendimento" do
-// formulário de local de atendimento — usado para separá-los dos canais
+// Rótulo fixo dos canais criados pelo bloco "Central de Atendimento Principal"
+// do formulário de local de atendimento — usado para separá-los dos canais
 // adicionais na hora de reabrir o formulário.
-export const ROTULO_CENTRAL = "Central de Atendimento";
+export const ROTULO_CENTRAL = "Central de Atendimento Principal";
 
 // O tipo do canal já serve de rótulo; só "Outro" pede um rótulo digitado
 // (ex.: "WhatsApp da Glória").

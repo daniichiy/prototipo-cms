@@ -105,7 +105,7 @@ function assertValid(v: Valores) {
   if (Number.isNaN(v.municipioId)) throw new Error("Selecione a cidade.");
 }
 
-// Telefone e e-mail da Central de Atendimento são guardados como canais, com
+// Telefone e e-mail da Central de Atendimento Principal são guardados como canais, com
 // rótulo fixo, para o formulário conseguir separá-los dos canais adicionais.
 function montarCanais(v: Valores): CanalInput[] {
   // fora de "Outro", o próprio tipo do canal é o rótulo

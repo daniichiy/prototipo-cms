@@ -381,7 +381,7 @@ async function main() {
     canais: [
       {
         tipo: "telefone",
-        rotulo: "Central de Atendimento",
+        rotulo: "Central de Atendimento Principal",
         valor: "(67) 3378-2600",
       },
       { tipo: "whatsapp", rotulo: "Ouvidoria", valor: "(67) 99999-1234" },
@@ -429,12 +429,12 @@ async function main() {
     canais: [
       {
         tipo: "telefone",
-        rotulo: "Central de Atendimento",
+        rotulo: "Central de Atendimento Principal",
         valor: "(67) 3411-7700",
       },
       {
         tipo: "email",
-        rotulo: "Central de Atendimento",
+        rotulo: "Central de Atendimento Principal",
         valor: "procon.dourados@sejusp.ms.gov.br",
       },
     ],

@@ -277,7 +277,7 @@ export default function UnidadeForm({
             onChange={(e) => setCentralAtendimento(e.target.checked)}
             className="h-4 w-4 rounded border-slate-300 text-navy-800 focus:ring-navy-700"
           />
-          Central de Atendimento
+          Central de Atendimento Principal
         </label>
 
         {centralAtendimento && (
