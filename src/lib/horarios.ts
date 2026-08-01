@@ -1,4 +1,5 @@
 import { DIAS_SEMANA } from "@/lib/masks";
+import { parseDiasSemana } from "@/lib/orgao";
 
 export type PeriodoInput = {
   dias: number[];
@@ -93,6 +94,75 @@ export function reconstructPeriods(horarios: HorarioRow[]): PeriodoInput[] {
   }
 
   return periods;
+}
+
+// O órgão guarda uma única faixa de horário por tipo (dias como CSV, direto em
+// OrgaoEndereco); aqui ela vira o mesmo formato de períodos usado no formulário
+// do local de atendimento, para poder ser oferecida como horário já cadastrado.
+export type FaixaHorarioOrgao = {
+  diasSemana: string;
+  temIntervalo: boolean;
+  inicioManha: string;
+  fimManha?: string | null;
+  inicioTarde?: string | null;
+  fimTarde: string;
+};
+
+type EnderecoOrgaoHorarios = {
+  diasSemana: string;
+  temIntervalo: boolean;
+  funcInicioManha: string;
+  funcFimManha: string | null;
+  funcInicioTarde: string | null;
+  funcFimTarde: string;
+  atendInicioManha: string;
+  atendFimManha: string | null;
+  atendInicioTarde: string | null;
+  atendFimTarde: string;
+};
+
+/** Os dois horários do órgão no formato de períodos do formulário. */
+export function periodosDoOrgao(
+  endereco: EnderecoOrgaoHorarios | null | undefined
+): { funcionamento: PeriodoInput[]; atendimento: PeriodoInput[] } {
+  if (!endereco) return { funcionamento: [], atendimento: [] };
+  const { diasSemana, temIntervalo } = endereco;
+  return {
+    funcionamento: periodosDaFaixaOrgao({
+      diasSemana,
+      temIntervalo,
+      inicioManha: endereco.funcInicioManha,
+      fimManha: endereco.funcFimManha,
+      inicioTarde: endereco.funcInicioTarde,
+      fimTarde: endereco.funcFimTarde,
+    }),
+    atendimento: periodosDaFaixaOrgao({
+      diasSemana,
+      temIntervalo,
+      inicioManha: endereco.atendInicioManha,
+      fimManha: endereco.atendFimManha,
+      inicioTarde: endereco.atendInicioTarde,
+      fimTarde: endereco.atendFimTarde,
+    }),
+  };
+}
+
+export function periodosDaFaixaOrgao(
+  faixa: FaixaHorarioOrgao | null | undefined
+): PeriodoInput[] {
+  if (!faixa) return [];
+  const dias = parseDiasSemana(faixa.diasSemana);
+  if (!dias.length || !faixa.inicioManha || !faixa.fimTarde) return [];
+  return [
+    {
+      dias,
+      temIntervalo: faixa.temIntervalo,
+      inicioManha: faixa.inicioManha,
+      fimManha: faixa.temIntervalo ? faixa.fimManha ?? "" : "",
+      inicioTarde: faixa.temIntervalo ? faixa.inicioTarde ?? "" : "",
+      fimTarde: faixa.fimTarde,
+    },
+  ];
 }
 
 export function buildHorarioRows(

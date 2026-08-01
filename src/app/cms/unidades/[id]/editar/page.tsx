@@ -5,6 +5,7 @@ import { updateUnidade } from "@/app/cms/unidades/actions";
 import { salvarModeloHorario } from "@/app/cms/horarios/actions";
 import {
   parsePeriodos,
+  periodosDoOrgao,
   reconstructPeriods,
   TIPO_ATENDIMENTO,
   TIPO_FUNCIONAMENTO,
@@ -30,7 +31,10 @@ export default async function EditarUnidadePage({
           horarios: { include: { tipoHorario: true } },
         },
       }),
-      prisma.orgao.findMany({ orderBy: { nome: "asc" } }),
+      prisma.orgao.findMany({
+        orderBy: { nome: "asc" },
+        include: { endereco: true },
+      }),
       prisma.municipio.findMany({ orderBy: { nome: "asc" } }),
       prisma.modeloHorario.findMany({ orderBy: { nome: "asc" } }),
       prisma.pontoAtendimento.findMany({
@@ -70,7 +74,16 @@ export default async function EditarUnidadePage({
 
       <UnidadeForm
         action={updateUnidadeComId}
-        orgaos={orgaos}
+        orgaos={orgaos.map((o) => {
+          const horarios = periodosDoOrgao(o.endereco);
+          return {
+            id: o.id,
+            nome: o.nome,
+            sigla: o.sigla,
+            periodosFuncionamento: horarios.funcionamento,
+            periodosAtendimento: horarios.atendimento,
+          };
+        })}
         municipios={municipios}
         modelosHorario={modelos.map((m) => ({
           id: m.id,

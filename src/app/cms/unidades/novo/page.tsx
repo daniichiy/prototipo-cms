@@ -2,12 +2,16 @@ import { prisma } from "@/lib/prisma";
 import UnidadeForm from "@/components/cms/UnidadeForm";
 import { createUnidade } from "@/app/cms/unidades/actions";
 import { salvarModeloHorario } from "@/app/cms/horarios/actions";
-import { parsePeriodos } from "@/lib/horarios";
+import { parsePeriodos, periodosDoOrgao } from "@/lib/horarios";
 
 export default async function NovaUnidadePage() {
   const [orgaos, municipios, modelos, outrosLocais] =
     await Promise.all([
-      prisma.orgao.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
+      prisma.orgao.findMany({
+        where: { ativo: true },
+        orderBy: { nome: "asc" },
+        include: { endereco: true },
+      }),
       prisma.municipio.findMany({ orderBy: { nome: "asc" } }),
       prisma.modeloHorario.findMany({ orderBy: { nome: "asc" } }),
       prisma.pontoAtendimento.findMany({
@@ -29,7 +33,16 @@ export default async function NovaUnidadePage() {
 
       <UnidadeForm
         action={createUnidade}
-        orgaos={orgaos}
+        orgaos={orgaos.map((o) => {
+          const horarios = periodosDoOrgao(o.endereco);
+          return {
+            id: o.id,
+            nome: o.nome,
+            sigla: o.sigla,
+            periodosFuncionamento: horarios.funcionamento,
+            periodosAtendimento: horarios.atendimento,
+          };
+        })}
         municipios={municipios}
         modelosHorario={modelos.map((m) => ({
           id: m.id,

@@ -27,6 +27,16 @@ import {
 
 type Canal = CanalInput;
 
+// Órgão do select do bloco 1. Os horários vêm do cadastro do próprio órgão e
+// são oferecidos como opção nos dois blocos de horário.
+export type OrgaoOption = {
+  id: number;
+  nome: string;
+  sigla: string;
+  periodosFuncionamento?: PeriodoInput[];
+  periodosAtendimento?: PeriodoInput[];
+};
+
 export type UnidadeFormInitialData = {
   nome: string;
   orgaoId: number;
@@ -57,7 +67,7 @@ export default function UnidadeForm({
   submitLabel = "Salvar Local de Atendimento",
 }: {
   action: (formData: FormData) => Promise<void>;
-  orgaos: { id: number; nome: string; sigla: string }[];
+  orgaos: OrgaoOption[];
   municipios: { id: number; nome: string; uf: string }[];
   modelosHorario: ModeloHorarioResumo[];
   outrosLocais: { id: number; nome: string; sublabel?: string }[];
@@ -100,6 +110,20 @@ export default function UnidadeForm({
     []
   );
   const [replicarAtendimento, setReplicarAtendimento] = useState<number[]>([]);
+
+  // Horário já cadastrado pelo órgão escolhido acima — some do select enquanto
+  // nenhum órgão estiver selecionado ou se o órgão não tiver horário cadastrado.
+  const orgaoSelecionado = orgaos.find((o) => o.id === orgaoId);
+  function horarioDoOrgao(
+    periodos: PeriodoInput[] | undefined,
+    tipo: string
+  ): { label: string; periodos: PeriodoInput[] } | undefined {
+    if (!orgaoSelecionado || !periodos?.length) return undefined;
+    return {
+      label: `Horário de ${tipo} do ${orgaoSelecionado.sigla}`,
+      periodos,
+    };
+  }
 
   function addCanal() {
     setCanais((prev) => [
@@ -367,6 +391,10 @@ export default function UnidadeForm({
           periods={periodosFuncionamento}
           onChange={setPeriodosFuncionamento}
           modelos={modelosHorario}
+          horarioOrgao={horarioDoOrgao(
+            orgaoSelecionado?.periodosFuncionamento,
+            "funcionamento"
+          )}
           onSalvarModelo={salvarModeloHorario}
           outrosLocais={outrosLocais}
           replicarIds={replicarFuncionamento}
@@ -384,6 +412,10 @@ export default function UnidadeForm({
           periods={periodosAtendimento}
           onChange={setPeriodosAtendimento}
           modelos={modelosHorario}
+          horarioOrgao={horarioDoOrgao(
+            orgaoSelecionado?.periodosAtendimento,
+            "atendimento"
+          )}
           onSalvarModelo={salvarModeloHorario}
           outrosLocais={outrosLocais}
           replicarIds={replicarAtendimento}

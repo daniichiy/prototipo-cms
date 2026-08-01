@@ -17,11 +17,16 @@ export type ModeloHorarioResumo = {
   periodos: PeriodoInput[];
 };
 
+// O horário do órgão não é um modelo salvo, então ocupa um valor próprio no
+// select — os modelos usam o id numérico e nunca colidem com este.
+const VALOR_ORGAO = "orgao";
+
 export default function HorariosEditor({
   titulo,
   periods,
   onChange,
   modelos,
+  horarioOrgao,
   onSalvarModelo,
   outrosLocais,
   replicarIds,
@@ -31,6 +36,7 @@ export default function HorariosEditor({
   periods: PeriodoInput[];
   onChange: (periods: PeriodoInput[]) => void;
   modelos: ModeloHorarioResumo[];
+  horarioOrgao?: { label: string; periodos: PeriodoInput[] };
   onSalvarModelo: (nome: string, periodosJson: string) => Promise<void>;
   outrosLocais: { id: number; nome: string; sublabel?: string }[];
   replicarIds: number[];
@@ -46,6 +52,12 @@ export default function HorariosEditor({
 
   function aplicarModelo(id: string) {
     setModeloId(id);
+    if (id === VALOR_ORGAO) {
+      if (horarioOrgao?.periodos.length) {
+        onChange(horarioOrgao.periodos.map(normalizarPeriodo));
+      }
+      return;
+    }
     const modelo = modelos.find((m) => String(m.id) === id);
     if (modelo?.periodos.length) {
       onChange(modelo.periodos.map(normalizarPeriodo));
@@ -79,14 +91,21 @@ export default function HorariosEditor({
       <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3">
         <Campo
           label="Usar um horário já cadastrado"
-          hint="Preenche os períodos abaixo com um horário salvo — você ainda pode ajustá-lo."
+          hint="Preenche os períodos abaixo com o horário do órgão ou com um horário salvo — você ainda pode ajustá-lo."
         >
           <select
-            value={modeloId ?? ""}
+            // se o órgão selecionado mudar e deixar de ter horário, a opção some
+            // e o select volta para o preenchimento manual
+            value={modeloId === VALOR_ORGAO && !horarioOrgao ? "" : modeloId}
             onChange={(e) => aplicarModelo(e.target.value)}
             className={inputClass}
           >
             <option value="">Preencher manualmente</option>
+            {horarioOrgao && (
+              <option value={VALOR_ORGAO}>
+                {horarioOrgao.label} — {resumoPeriodos(horarioOrgao.periodos)}
+              </option>
+            )}
             {modelos.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.nome} — {resumoPeriodos(m.periodos)}
