@@ -21,6 +21,10 @@ export type ModeloHorarioResumo = {
 // select — os modelos usam o id numérico e nunca colidem com este.
 const VALOR_ORGAO = "orgao";
 
+// Replicar o horário para outros locais está desativado por enquanto — o código
+// segue no arquivo, basta voltar esta constante para true para reativar.
+const REPLICAR_ATIVO = false;
+
 export default function HorariosEditor({
   titulo,
   periods,
@@ -125,13 +129,15 @@ export default function HorariosEditor({
         >
           Salvar este horário para reutilizar
         </button>
-        <button
-          type="button"
-          onClick={() => setMostrarReplicar((v) => !v)}
-          className="text-sm font-medium text-gold-600 hover:underline"
-        >
-          Aplicar este horário a outros locais
-        </button>
+        {REPLICAR_ATIVO && (
+          <button
+            type="button"
+            onClick={() => setMostrarReplicar((v) => !v)}
+            className="text-sm font-medium text-gold-600 hover:underline"
+          >
+            Aplicar este horário a outros locais
+          </button>
+        )}
       </div>
 
       {mostrarSalvarModelo && (
@@ -164,7 +170,7 @@ export default function HorariosEditor({
         </div>
       )}
 
-      {mostrarReplicar && (
+      {REPLICAR_ATIVO && mostrarReplicar && (
         <div className="rounded-md border border-slate-200 bg-white p-3">
           <p className="mb-1 text-sm font-medium text-slate-700">
             Aplicar o mesmo {titulo.toLowerCase()} a outros locais
