@@ -159,7 +159,7 @@ export default async function OrgaoInformacoesPage({
               </div>
 
               <div className="space-y-5">
-                <Dado label="Source do mapa">
+                <Dado label="Source do maps">
                   <VisualizarHtml
                     titulo="Rota do Órgão"
                     html={endereco.sourceMapa}

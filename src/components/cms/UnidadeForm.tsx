@@ -249,15 +249,15 @@ export default function UnidadeForm({
           </Campo>
 
           <Campo
-            label="Source do mapa"
+            label="Source do maps"
             required
             className="sm:col-span-3"
             hint="Link de referência do endereço no Google Maps"
           >
-            <input
-              type="text"
+            <textarea
               name="sourceMapa"
               defaultValue={initialData?.sourceMapa ?? ""}
+              rows={6}
               required
               placeholder="https://www.google.com/maps/embed?pb=..."
               className={inputClass}

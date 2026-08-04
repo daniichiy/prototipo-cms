@@ -75,7 +75,7 @@ export default function EnderecoCampos({
       </Campo>
 
       <Campo
-        label="Source do Mapa"
+        label="Source do maps"
         required={obrigatorio}
         hint="Adicionar source/embed do maps.google.com."
       >
