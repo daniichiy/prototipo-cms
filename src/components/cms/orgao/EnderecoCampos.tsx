@@ -1,78 +1,175 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import SearchableSelect from "@/components/SearchableSelect";
 import { Campo, inputClass } from "@/components/cms/form-ui";
-import { DIAS_SEMANA } from "@/lib/masks";
+import { maskCep } from "@/lib/masks";
+import type { HorariosInitialData } from "@/components/cms/orgao/HorariosCampos";
+
+export type MunicipioOption = { id: number; nome: string; uf: string };
 
 export type EnderecoInitialData = {
   logradouro: string;
+  complemento: string;
+  bairro: string;
+  cep: string;
   sourceMapa: string;
   municipioId: number | null;
-  dias: number[];
-  temIntervalo: boolean;
-  funcInicioManha: string;
-  funcFimManha: string;
-  funcInicioTarde: string;
-  funcFimTarde: string;
-  atendInicioManha: string;
-  atendFimManha: string;
-  atendInicioTarde: string;
-  atendFimTarde: string;
 };
+
+/** Endereço + horários no mesmo formulário (tela "Gerenciar Endereço"). */
+export type EnderecoHorariosInitialData = EnderecoInitialData &
+  HorariosInitialData;
 
 export default function EnderecoCampos({
   municipios,
   initialData,
   obrigatorio = true,
 }: {
-  municipios: { id: number; nome: string; uf: string }[];
+  municipios: MunicipioOption[];
   initialData?: EnderecoInitialData;
   obrigatorio?: boolean;
 }) {
   const [municipioId, setMunicipioId] = useState<number | null>(
     initialData?.municipioId ?? null
   );
-  const [dias, setDias] = useState<number[]>(initialData?.dias ?? []);
-  const [temIntervalo, setTemIntervalo] = useState(
-    initialData?.temIntervalo ?? false
+  // a UF vem do município escolhido; serve para filtrar a lista de cidades
+  const [uf, setUf] = useState(
+    () =>
+      municipios.find((m) => m.id === initialData?.municipioId)?.uf ?? ""
+  );
+  const [cep, setCep] = useState(initialData?.cep ?? "");
+
+  const ufs = useMemo(
+    () => [...new Set(municipios.map((m) => m.uf))].sort(),
+    [municipios]
+  );
+  const municipiosDaUf = useMemo(
+    () => (uf ? municipios.filter((m) => m.uf === uf) : municipios),
+    [municipios, uf]
   );
 
-  function toggleDia(valor: number) {
-    setDias((prev) =>
-      prev.includes(valor)
-        ? prev.filter((d) => d !== valor)
-        : [...prev, valor].sort((a, b) => a - b)
-    );
+  // trocar a UF invalida a cidade que não pertence mais à lista
+  function trocarUf(novaUf: string) {
+    setUf(novaUf);
+    const atual = municipios.find((m) => m.id === municipioId);
+    if (atual && novaUf && atual.uf !== novaUf) setMunicipioId(null);
   }
 
   return (
     <div className="space-y-5">
-      <Campo label="Endereço" required={obrigatorio} hint="Informe o endereço">
-        <input
-          type="text"
-          name="logradouro"
-          defaultValue={initialData?.logradouro ?? ""}
-          placeholder="Rua, avenida ou rodovia e número"
+      {/* cada campo tem key própria: sem isso o React reaproveita o input da
+          mesma posição ao reordenar (ex.: controlado <-> não controlado) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
+        <Campo
+          key="cep"
+          label="CEP"
           required={obrigatorio}
-          className={inputClass}
-        />
-      </Campo>
+          className="sm:col-span-2"
+          hint="CEP do endereço"
+        >
+          <input
+            type="text"
+            name="cep"
+            value={cep}
+            onChange={(e) => setCep(maskCep(e.target.value))}
+            placeholder="00000-000"
+            required={obrigatorio}
+            className={inputClass}
+          />
+        </Campo>
 
-      <Campo label="Cidade" required={obrigatorio} hint="Informe a cidade">
-        <SearchableSelect
-          name="municipioId"
+        <Campo
+          key="logradouro"
+          label="Endereço"
           required={obrigatorio}
-          value={municipioId}
-          onChange={setMunicipioId}
-          placeholder="Buscar cidade..."
-          options={municipios.map((m) => ({
-            id: m.id,
-            label: m.nome,
-            sublabel: m.uf,
-          }))}
-        />
-      </Campo>
+          className="sm:col-span-4"
+          hint="Informe o endereço"
+        >
+          <input
+            type="text"
+            name="logradouro"
+            defaultValue={initialData?.logradouro ?? ""}
+            placeholder="Rua, avenida ou rodovia e número"
+            required={obrigatorio}
+            className={inputClass}
+          />
+        </Campo>
+
+        <Campo
+          key="complemento"
+          label="Complemento"
+          className="sm:col-span-3"
+          hint="Bloco, sala, andar (Opcional)"
+        >
+          <input
+            type="text"
+            name="complemento"
+            defaultValue={initialData?.complemento ?? ""}
+            className={inputClass}
+          />
+        </Campo>
+
+        <Campo
+          key="bairro"
+          label="Bairro"
+          required={obrigatorio}
+          className="sm:col-span-3"
+          hint="Bairro do endereço"
+        >
+          <input
+            type="text"
+            name="bairro"
+            defaultValue={initialData?.bairro ?? ""}
+            required={obrigatorio}
+            className={inputClass}
+          />
+        </Campo>
+
+        <Campo
+          key="uf"
+          label="UF"
+          required={obrigatorio}
+          className="sm:col-span-2"
+          hint="Estado do endereço"
+        >
+          <select
+            name="uf"
+            value={uf}
+            onChange={(e) => trocarUf(e.target.value)}
+            required={obrigatorio}
+            className={inputClass}
+          >
+            <option value="">Selecione...</option>
+            {ufs.map((sigla) => (
+              <option key={sigla} value={sigla}>
+                {sigla}
+              </option>
+            ))}
+          </select>
+        </Campo>
+
+        <Campo
+          key="cidade"
+          label="Cidade"
+          required={obrigatorio}
+          className="sm:col-span-4"
+          hint="Informe a cidade"
+        >
+          <SearchableSelect
+            name="municipioId"
+            required={obrigatorio}
+            value={municipioId}
+            onChange={setMunicipioId}
+            placeholder="Buscar cidade..."
+            options={municipiosDaUf.map((m) => ({
+              id: m.id,
+              label: m.nome,
+              sublabel: m.uf,
+            }))}
+          />
+        </Campo>
+      </div>
 
       <Campo
         label="Source do maps"
@@ -87,175 +184,6 @@ export default function EnderecoCampos({
           className={inputClass}
         />
       </Campo>
-
-      <Campo
-        label="Dias da Semana"
-        required={obrigatorio}
-        hint="Escolha os dias da semana"
-      >
-        <div className="flex flex-wrap gap-2 rounded-md border border-slate-300 bg-white p-2">
-          {DIAS_SEMANA.map((d) => {
-            const selecionado = dias.includes(d.valor);
-            return (
-              <button
-                key={d.valor}
-                type="button"
-                onClick={() => toggleDia(d.valor)}
-                aria-pressed={selecionado}
-                className={`rounded px-2 py-1 text-sm ${
-                  selecionado
-                    ? "bg-slate-200 text-slate-800"
-                    : "border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                {selecionado && <span aria-hidden>× </span>}
-                {d.label}
-              </button>
-            );
-          })}
-        </div>
-        {obrigatorio && dias.length === 0 && (
-          <p className="mt-1 text-xs text-amber-600">
-            Selecione ao menos um dia da semana.
-          </p>
-        )}
-      </Campo>
-
-      <div>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            name="temIntervalo"
-            checked={temIntervalo}
-            onChange={(e) => setTemIntervalo(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-navy-800 focus:ring-navy-700"
-          />
-          Órgão tem intervalo no funcionamento?
-        </label>
-        <p className="ml-6 mt-0.5 text-xs text-slate-400">
-          Marque se o intervalo de almoço estiver ativo.
-        </p>
-      </div>
-
-      <BlocoHorarios
-        titulo="Horário de funcionamento"
-        prefixo="func"
-        rotulo="funcionamento"
-        temIntervalo={temIntervalo}
-        obrigatorio={obrigatorio}
-        initial={{
-          inicioManha: initialData?.funcInicioManha ?? "",
-          fimManha: initialData?.funcFimManha ?? "",
-          inicioTarde: initialData?.funcInicioTarde ?? "",
-          fimTarde: initialData?.funcFimTarde ?? "",
-        }}
-      />
-
-      <BlocoHorarios
-        titulo="Horário de atendimento"
-        prefixo="atend"
-        rotulo="atendimento"
-        temIntervalo={temIntervalo}
-        obrigatorio={obrigatorio}
-        initial={{
-          inicioManha: initialData?.atendInicioManha ?? "",
-          fimManha: initialData?.atendFimManha ?? "",
-          inicioTarde: initialData?.atendInicioTarde ?? "",
-          fimTarde: initialData?.atendFimTarde ?? "",
-        }}
-      />
-
-      <input type="hidden" name="diasSemanaJson" value={JSON.stringify(dias)} />
     </div>
-  );
-}
-
-function BlocoHorarios({
-  titulo,
-  prefixo,
-  rotulo,
-  temIntervalo,
-  obrigatorio,
-  initial,
-}: {
-  titulo: string;
-  prefixo: "func" | "atend";
-  rotulo: string;
-  temIntervalo: boolean;
-  obrigatorio: boolean;
-  initial: {
-    inicioManha: string;
-    fimManha: string;
-    inicioTarde: string;
-    fimTarde: string;
-  };
-}) {
-  const desabilitadoClass = `${inputClass} disabled:bg-slate-100 disabled:text-slate-400`;
-
-  return (
-    <fieldset className="rounded-md border border-slate-200 bg-slate-50 p-4">
-      <legend className="px-1 text-sm font-medium text-slate-700">
-        {titulo}
-      </legend>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Campo
-          label={`Inicio do ${rotulo} da manhã`}
-          required={obrigatorio}
-          hint={`Informe a hora de inicio do ${rotulo} pela manhã no órgão`}
-        >
-          <input
-            type="time"
-            name={`${prefixo}InicioManha`}
-            defaultValue={initial.inicioManha}
-            required={obrigatorio}
-            className={inputClass}
-          />
-        </Campo>
-
-        <Campo
-          label={`Fim do ${rotulo} da manhã`}
-          required={obrigatorio && temIntervalo}
-          hint={`Informe a hora de finalização do ${rotulo} pela manhã no órgão`}
-        >
-          <input
-            type="time"
-            name={`${prefixo}FimManha`}
-            defaultValue={initial.fimManha}
-            disabled={!temIntervalo}
-            required={obrigatorio && temIntervalo}
-            className={desabilitadoClass}
-          />
-        </Campo>
-
-        <Campo
-          label={`Inicio do ${rotulo} da tarde`}
-          required={obrigatorio && temIntervalo}
-          hint={`Informe a hora de inicio do ${rotulo} pela tarde no órgão`}
-        >
-          <input
-            type="time"
-            name={`${prefixo}InicioTarde`}
-            defaultValue={initial.inicioTarde}
-            disabled={!temIntervalo}
-            required={obrigatorio && temIntervalo}
-            className={desabilitadoClass}
-          />
-        </Campo>
-
-        <Campo
-          label={`Fim do ${rotulo} da tarde`}
-          required={obrigatorio}
-          hint={`Informe a hora de finalização do ${rotulo} pela tarde no órgão`}
-        >
-          <input
-            type="time"
-            name={`${prefixo}FimTarde`}
-            defaultValue={initial.fimTarde}
-            required={obrigatorio}
-            className={inputClass}
-          />
-        </Campo>
-      </div>
-    </fieldset>
   );
 }

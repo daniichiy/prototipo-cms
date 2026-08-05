@@ -85,7 +85,7 @@ export default function ContatoCampos({
         <Campo
           label="Telefone"
           required={obrigatorio}
-          hint={`Informe um número de telefone ${marca}`}
+          hint={`Telefone do órgão ${marca}`}
         >
           <input
             type="text"
@@ -101,7 +101,7 @@ export default function ContatoCampos({
         <Campo
           label="Email"
           required={obrigatorio}
-          hint={`Informe um email válido ${marca}`}
+          hint={`Email do órgão ${marca}`}
         >
           <input
             type="email"

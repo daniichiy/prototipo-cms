@@ -14,6 +14,9 @@ import ContatoCampos, {
 import EnderecoCampos, {
   type EnderecoInitialData,
 } from "@/components/cms/orgao/EnderecoCampos";
+import HorariosCampos, {
+  type HorariosInitialData,
+} from "@/components/cms/orgao/HorariosCampos";
 import { ORGAOS_DISPONIVEIS } from "@/lib/orgao";
 
 export type OrgaoFormInitialData = {
@@ -37,7 +40,7 @@ export default function OrgaoForm({
   /** Quando informado, o formulário também exibe as seções de contato e endereço. */
   municipios?: { id: number; nome: string; uf: string }[];
   contatoInitial?: ContatoInitialData;
-  enderecoInitial?: EnderecoInitialData;
+  enderecoInitial?: EnderecoInitialData & HorariosInitialData;
   /** Campo "Responsável" do contato fica inativo quando false. */
   mostrarResponsavel?: boolean;
 }) {
@@ -78,13 +81,20 @@ export default function OrgaoForm({
 
           <Secao
             titulo="Endereço"
-            subtitulo="Localização e horários do órgão. Deixe em branco para informar depois; se preencher, complete todos os campos marcados."
+            subtitulo="Localização do órgão. Deixe em branco para informar depois; se preencher, complete todos os campos marcados."
           >
             <EnderecoCampos
               municipios={municipios}
               initialData={enderecoInitial}
               obrigatorio={false}
             />
+          </Secao>
+
+          <Secao
+            titulo="Horários"
+            subtitulo="Dias da semana e horários de funcionamento e de atendimento do órgão."
+          >
+            <HorariosCampos initialData={enderecoInitial} obrigatorio={false} />
           </Secao>
         </>
       )}

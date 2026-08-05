@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import EnderecoCampos, {
-  type EnderecoInitialData,
+  type EnderecoHorariosInitialData,
 } from "@/components/cms/orgao/EnderecoCampos";
+import HorariosCampos from "@/components/cms/orgao/HorariosCampos";
 import { botaoPrimarioClass } from "@/components/cms/form-ui";
 
-export type { EnderecoInitialData };
+export type { EnderecoHorariosInitialData };
 
 export default function EnderecoForm({
   action,
@@ -17,7 +18,7 @@ export default function EnderecoForm({
   action: (formData: FormData) => Promise<void>;
   cancelHref: string;
   municipios: { id: number; nome: string; uf: string }[];
-  initialData?: EnderecoInitialData;
+  initialData?: EnderecoHorariosInitialData;
 }) {
   return (
     <form action={action}>
@@ -27,6 +28,14 @@ export default function EnderecoForm({
         </h3>
 
         <EnderecoCampos municipios={municipios} initialData={initialData} />
+      </div>
+
+      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-6 text-base font-semibold text-navy-900">
+          Horários do órgão
+        </h3>
+
+        <HorariosCampos initialData={initialData} />
       </div>
 
       <div className="mt-4 flex gap-3 rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">

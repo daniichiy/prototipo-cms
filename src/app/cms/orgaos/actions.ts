@@ -194,6 +194,9 @@ const HORARIOS_OBRIGATORIOS = [
 /** Retorna null quando nenhum campo de endereço foi preenchido (seção opcional). */
 function parseEndereco(formData: FormData) {
   const logradouro = texto(formData, "logradouro");
+  const complemento = texto(formData, "complemento");
+  const bairro = texto(formData, "bairro");
+  const cep = texto(formData, "cep");
   const sourceMapa = texto(formData, "sourceMapa");
   const municipioId = Number(formData.get("municipioId"));
   const dias = JSON.parse(String(formData.get("diasSemanaJson") ?? "[]"));
@@ -202,6 +205,9 @@ function parseEndereco(formData: FormData) {
 
   const preenchido =
     logradouro ||
+    complemento ||
+    bairro ||
+    cep ||
     sourceMapa ||
     municipioId ||
     (Array.isArray(dias) && dias.length > 0) ||
@@ -223,6 +229,9 @@ function parseEndereco(formData: FormData) {
   return {
     municipioId,
     logradouro,
+    complemento: complemento || null,
+    bairro: bairro || null,
+    cep: cep || null,
     sourceMapa,
     diasSemana: serializeDiasSemana(dias),
     temIntervalo,

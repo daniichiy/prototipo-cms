@@ -65,6 +65,9 @@ export default async function EditarOrgaoPage({
         }}
         enderecoInitial={{
           logradouro: e?.logradouro ?? "",
+          complemento: e?.complemento ?? "",
+          bairro: e?.bairro ?? "",
+          cep: e?.cep ?? "",
           sourceMapa: e?.sourceMapa ?? "",
           municipioId: e?.municipioId ?? null,
           dias: e ? parseDiasSemana(e.diasSemana) : [],
