@@ -108,7 +108,6 @@ export default async function EditarUnidadePage({
           municipioId: ponto.endereco?.municipioId ?? 0,
           sourceMapa: ponto.endereco?.sourceMapa ?? "",
           responsavelNome: ponto.responsaveis[0]?.pessoa.nome ?? "",
-          centralAtendimento: Boolean(canalCentralTelefone || canalCentralEmail),
           telefone: canalCentralTelefone?.valor ?? "",
           email: canalCentralEmail?.valor ?? "",
           canais: canaisAdicionais,

@@ -48,7 +48,6 @@ export type UnidadeFormInitialData = {
   municipioId: number;
   sourceMapa: string;
   responsavelNome: string;
-  centralAtendimento: boolean;
   telefone: string;
   email: string;
   canais: Canal[];
@@ -105,9 +104,6 @@ export default function UnidadeForm({
     if (atual && novaUf && atual.uf !== novaUf) setMunicipioId(null);
   }
 
-  const [centralAtendimento, setCentralAtendimento] = useState(
-    initialData?.centralAtendimento ?? false
-  );
   const [telefone, setTelefone] = useState(initialData?.telefone ?? "");
 
   const [canais, setCanais] = useState<Canal[]>(
@@ -330,50 +326,45 @@ export default function UnidadeForm({
       {/* BLOCO 2 — Contato */}
       <Secao titulo="Adicionar contato">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Campo label="Responsável" hint="Nome da pessoa responsável pela unidade">
+          <Campo
+            key="responsavel"
+            label="Responsável da Unidade"
+            required
+            className="sm:col-span-2"
+            hint="Nome da pessoa responsável pela unidade"
+          >
             <input
               type="text"
               name="responsavelNome"
               defaultValue={initialData?.responsavelNome ?? ""}
+              required
+              className={inputClass}
+            />
+          </Campo>
+
+          <Campo key="telefone" label="Telefone da unidade" required>
+            <input
+              type="text"
+              name="telefone"
+              value={telefone ?? ""}
+              onChange={(e) => setTelefone(maskPhone(e.target.value))}
+              placeholder="(00) 00000-0000"
+              required
+              className={inputClass}
+            />
+          </Campo>
+
+          <Campo key="email" label="E-mail da unidade" required>
+            <input
+              type="email"
+              name="email"
+              defaultValue={initialData?.email ?? ""}
+              placeholder="contato@orgao.ms.gov.br"
+              required
               className={inputClass}
             />
           </Campo>
         </div>
-
-        <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            name="centralAtendimento"
-            checked={centralAtendimento}
-            onChange={(e) => setCentralAtendimento(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-navy-800 focus:ring-navy-700"
-          />
-          Central de Atendimento Principal
-        </label>
-
-        {centralAtendimento && (
-          <div className="mt-3 grid grid-cols-1 gap-4 rounded-md border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
-            <Campo label="Telefone da unidade">
-              <input
-                type="text"
-                name="telefone"
-                value={telefone ?? ""}
-                onChange={(e) => setTelefone(maskPhone(e.target.value))}
-                placeholder="(00) 00000-0000"
-                className={inputClass}
-              />
-            </Campo>
-            <Campo label="E-mail da unidade">
-              <input
-                type="email"
-                name="email"
-                defaultValue={initialData?.email ?? ""}
-                placeholder="contato@orgao.ms.gov.br"
-                className={inputClass}
-              />
-            </Campo>
-          </div>
-        )}
 
         <div className="mt-5 space-y-3">
           <div>

@@ -58,8 +58,6 @@ function parseIds(raw: FormDataEntryValue | null): number[] {
 }
 
 function parseFormValues(formData: FormData) {
-  const centralAtendimento = formData.get("centralAtendimento") === "on";
-
   return {
     nome: String(formData.get("nome") ?? "").trim(),
     orgaoId: Number(formData.get("orgaoId")),
@@ -72,12 +70,9 @@ function parseFormValues(formData: FormData) {
     municipioId: Number(formData.get("municipioId")),
     sourceMapa: String(formData.get("sourceMapa") ?? "").trim(),
 
-    responsavelNome: String(formData.get("responsavelNome") ?? "").trim() || null,
-    centralAtendimento,
-    telefone: centralAtendimento
-      ? String(formData.get("telefone") ?? "").trim()
-      : "",
-    email: centralAtendimento ? String(formData.get("email") ?? "").trim() : "",
+    responsavelNome: String(formData.get("responsavelNome") ?? "").trim(),
+    telefone: String(formData.get("telefone") ?? "").trim(),
+    email: String(formData.get("email") ?? "").trim(),
 
     canais: JSON.parse(
       String(formData.get("canaisJson") ?? "[]")
@@ -101,12 +96,18 @@ function assertValid(v: Valores) {
   if (!v.bairro) throw new Error("Bairro é obrigatório.");
   if (!v.cep) throw new Error("CEP é obrigatório.");
   if (!v.sourceMapa) throw new Error("Source do mapa é obrigatório.");
+  if (!v.responsavelNome) {
+    throw new Error("Responsável da unidade é obrigatório.");
+  }
+  if (!v.telefone) throw new Error("Telefone da unidade é obrigatório.");
+  if (!v.email) throw new Error("E-mail da unidade é obrigatório.");
   if (Number.isNaN(v.orgaoId)) throw new Error("Selecione um órgão.");
   if (Number.isNaN(v.municipioId)) throw new Error("Selecione a cidade.");
 }
 
-// Telefone e e-mail da Central de Atendimento Principal são guardados como canais, com
-// rótulo fixo, para o formulário conseguir separá-los dos canais adicionais.
+// O telefone e o e-mail da unidade são guardados como canais, com um rótulo
+// fixo (ROTULO_CENTRAL) que serve de marcador interno para o formulário
+// separá-los dos canais adicionais na hora de editar.
 function montarCanais(v: Valores): CanalInput[] {
   // fora de "Outro", o próprio tipo do canal é o rótulo
   const canais = v.canais
