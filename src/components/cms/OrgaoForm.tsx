@@ -28,6 +28,7 @@ export default function OrgaoForm({
   municipios,
   contatoInitial,
   enderecoInitial,
+  mostrarResponsavel = true,
 }: {
   action: (formData: FormData) => Promise<void>;
   initialData?: OrgaoFormInitialData;
@@ -37,6 +38,8 @@ export default function OrgaoForm({
   municipios?: { id: number; nome: string; uf: string }[];
   contatoInitial?: ContatoInitialData;
   enderecoInitial?: EnderecoInitialData;
+  /** Campo "Responsável" do contato fica inativo quando false. */
+  mostrarResponsavel?: boolean;
 }) {
   return (
     <form action={action} className="space-y-8 pb-16">
@@ -66,7 +69,11 @@ export default function OrgaoForm({
             titulo="Informações de Contato"
             subtitulo="Responsável, telefone e email do órgão, além dos canais de atendimento. Preencha telefone e email para salvar o contato."
           >
-            <ContatoCampos initialData={contatoInitial} obrigatorio={false} />
+            <ContatoCampos
+              initialData={contatoInitial}
+              obrigatorio={false}
+              mostrarResponsavel={mostrarResponsavel}
+            />
           </Secao>
 
           <Secao

@@ -27,9 +27,12 @@ export type ContatoInitialData = {
 export default function ContatoCampos({
   initialData,
   obrigatorio = true,
+  mostrarResponsavel = true,
 }: {
   initialData?: ContatoInitialData;
   obrigatorio?: boolean;
+  /** Campo "Responsável" fica inativo (some do formulário) quando false. */
+  mostrarResponsavel?: boolean;
 }) {
   const [telefone, setTelefone] = useState(initialData?.telefone ?? "");
   const [canais, setCanais] = useState<CanalContatoInput[]>(
@@ -64,18 +67,20 @@ export default function ContatoCampos({
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Campo
-          label="Responsável"
-          className="sm:col-span-2"
-          hint="Nome da pessoa responsável pelo órgão"
-        >
-          <input
-            type="text"
-            name="responsavel"
-            defaultValue={initialData?.responsavel ?? ""}
-            className={inputClass}
-          />
-        </Campo>
+        {mostrarResponsavel && (
+          <Campo
+            label="Responsável"
+            className="sm:col-span-2"
+            hint="Nome da pessoa responsável pelo órgão"
+          >
+            <input
+              type="text"
+              name="responsavel"
+              defaultValue={initialData?.responsavel ?? ""}
+              className={inputClass}
+            />
+          </Campo>
+        )}
 
         <Campo
           label="Telefone"

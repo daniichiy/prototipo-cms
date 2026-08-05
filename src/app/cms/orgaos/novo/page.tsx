@@ -31,6 +31,8 @@ export default async function NovoOrgaoPage() {
         cancelHref="/cms/orgaos"
         submitLabel="Cadastrar Órgão"
         municipios={municipios}
+        // campo "Responsável" desativado neste formulário
+        mostrarResponsavel={false}
       />
     </div>
   );

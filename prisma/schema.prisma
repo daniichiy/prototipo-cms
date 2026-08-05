@@ -48,6 +48,18 @@ model Orgao {
   sites             SiteRelacionado[]
 }
 
+// Coleção "Cadastrar Órgãos": catálogo simples de órgãos (sigla, nome e
+// situação). É independente de Orgao, que guarda os detalhes (contato,
+// endereço, setores, gestores...) dos órgãos já em operação no CMS.
+model OrgaoCadastro {
+  id           Int      @id @default(autoincrement())
+  sigla        String   @unique
+  nome         String
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @default(now()) @updatedAt
+}
+
 // Contato principal do órgão: responsável, telefone e e-mail. Os demais canais
 // (WhatsApp, ouvidoria, redes...) ficam em OrgaoCanalContato, igual ao contato
 // do local de atendimento.
