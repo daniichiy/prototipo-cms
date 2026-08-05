@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import SearchableSelect from "@/components/SearchableSelect";
 import {
   Secao,
@@ -83,7 +83,27 @@ export default function UnidadeForm({
   const [municipioId, setMunicipioId] = useState<number | null>(
     initialData?.municipioId ?? null
   );
+  // a UF sai do município já escolhido e serve para filtrar a lista de cidades
+  const [uf, setUf] = useState(
+    () => municipios.find((m) => m.id === initialData?.municipioId)?.uf ?? ""
+  );
   const [cep, setCep] = useState(initialData?.cep ?? "");
+
+  const ufs = useMemo(
+    () => [...new Set(municipios.map((m) => m.uf))].sort(),
+    [municipios]
+  );
+  const municipiosDaUf = useMemo(
+    () => (uf ? municipios.filter((m) => m.uf === uf) : municipios),
+    [municipios, uf]
+  );
+
+  // trocar a UF invalida a cidade que não pertence mais à lista
+  function trocarUf(novaUf: string) {
+    setUf(novaUf);
+    const atual = municipios.find((m) => m.id === municipioId);
+    if (atual && novaUf && atual.uf !== novaUf) setMunicipioId(null);
+  }
 
   const [centralAtendimento, setCentralAtendimento] = useState(
     initialData?.centralAtendimento ?? false
@@ -155,8 +175,11 @@ export default function UnidadeForm({
         titulo="Cadastro do local de atendimento"
         subtitulo="Dados exibidos na seção “Onde solicitar” da Carta de Serviço"
       >
+        {/* cada campo com key própria: sem isso o React reaproveita o input da
+            mesma posição ao reordenar (ex.: controlado <-> não controlado) */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Campo
+            key="orgao"
             label="Órgão"
             required
             className="sm:col-span-3"
@@ -176,7 +199,12 @@ export default function UnidadeForm({
             />
           </Campo>
 
-          <Campo label="Nome" required className="sm:col-span-3">
+          <Campo
+            key="nome"
+            label="Nome do local de atendimento"
+            required
+            className="sm:col-span-3"
+          >
             <input
               type="text"
               name="nome"
@@ -186,7 +214,7 @@ export default function UnidadeForm({
             />
           </Campo>
 
-          <Campo label="CEP" required>
+          <Campo key="cep" label="CEP" required>
             <input
               type="text"
               name="cep"
@@ -199,6 +227,7 @@ export default function UnidadeForm({
           </Campo>
 
           <Campo
+            key="endereco"
             label="Endereço"
             required
             className="sm:col-span-2"
@@ -214,7 +243,7 @@ export default function UnidadeForm({
             />
           </Campo>
 
-          <Campo label="Complemento">
+          <Campo key="complemento" label="Complemento">
             <input
               type="text"
               name="complemento"
@@ -223,7 +252,7 @@ export default function UnidadeForm({
             />
           </Campo>
 
-          <Campo label="Bairro" required>
+          <Campo key="bairro" label="Bairro" required>
             <input
               type="text"
               name="bairro"
@@ -233,14 +262,31 @@ export default function UnidadeForm({
             />
           </Campo>
 
-          <Campo label="Cidade" required>
+          <Campo key="uf" label="UF" required hint="Estado do local">
+            <select
+              name="uf"
+              value={uf}
+              onChange={(e) => trocarUf(e.target.value)}
+              required
+              className={inputClass}
+            >
+              <option value="">Selecione...</option>
+              {ufs.map((sigla) => (
+                <option key={sigla} value={sigla}>
+                  {sigla}
+                </option>
+              ))}
+            </select>
+          </Campo>
+
+          <Campo key="cidade" label="Cidade" required>
             <SearchableSelect
               name="municipioId"
               required
               value={municipioId}
               onChange={setMunicipioId}
               placeholder="Buscar cidade..."
-              options={municipios.map((m) => ({
+              options={municipiosDaUf.map((m) => ({
                 id: m.id,
                 label: m.nome,
                 sublabel: m.uf,
@@ -249,6 +295,7 @@ export default function UnidadeForm({
           </Campo>
 
           <Campo
+            key="sourceMapa"
             label="Source do maps"
             required
             className="sm:col-span-3"
