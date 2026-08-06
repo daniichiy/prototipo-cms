@@ -223,6 +223,63 @@ export function normalizarPeriodo(periodo: Partial<PeriodoInput>): PeriodoInput 
   };
 }
 
+// ------------------------------------------- horário dia a dia x agrupado
+//
+// O formulário guarda sempre PeriodoInput[]. No modo "um horário por dia" cada
+// item tem exatamente um dia; no modo agrupado, os dias que compartilham a
+// mesma faixa ficam juntos no mesmo item. As duas funções abaixo convertem
+// entre os dois formatos quando o usuário alterna o modo.
+
+function chaveHorario(p: PeriodoInput): string {
+  return [
+    p.temIntervalo ? 1 : 0,
+    p.inicioManha,
+    p.fimManha,
+    p.inicioTarde,
+    p.fimTarde,
+  ].join("|");
+}
+
+/** Um período por dia da semana, na ordem da semana. */
+export function explodirPorDia(periodos: PeriodoInput[]): PeriodoInput[] {
+  const porDia = new Map<number, PeriodoInput>();
+  for (const periodo of periodos) {
+    for (const dia of periodo.dias) {
+      porDia.set(dia, { ...normalizarPeriodo(periodo), dias: [dia] });
+    }
+  }
+  return [...porDia.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, periodo]) => periodo);
+}
+
+/** Junta em um único período os dias que têm exatamente o mesmo horário. */
+export function agruparPorHorario(periodos: PeriodoInput[]): PeriodoInput[] {
+  const grupos = new Map<string, PeriodoInput>();
+  for (const periodo of periodos) {
+    if (!periodo.dias.length) continue;
+    const chave = chaveHorario(periodo);
+    const grupo = grupos.get(chave);
+    if (grupo) {
+      grupo.dias = [...new Set([...grupo.dias, ...periodo.dias])].sort(
+        (a, b) => a - b
+      );
+      continue;
+    }
+    grupos.set(chave, {
+      ...normalizarPeriodo(periodo),
+      dias: [...periodo.dias].sort((a, b) => a - b),
+    });
+  }
+  const lista = [...grupos.values()];
+  return lista.length ? lista : [{ ...PERIODO_VAZIO }];
+}
+
+/** Só faz sentido tratar como "por dia" quando cada item tem um único dia. */
+export function pareceHorarioPorDia(periodos: PeriodoInput[]): boolean {
+  return periodos.length > 1 && periodos.every((p) => p.dias.length === 1);
+}
+
 export function parsePeriodos(json: string): PeriodoInput[] {
   try {
     const dados = JSON.parse(json);

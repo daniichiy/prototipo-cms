@@ -458,6 +458,7 @@ export default function UnidadeForm({
           outrosLocais={outrosLocais}
           replicarIds={replicarAtendimento}
           onReplicarChange={setReplicarAtendimento}
+          permitirPorDia
         />
       </Secao>
 

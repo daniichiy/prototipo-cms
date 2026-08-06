@@ -5,8 +5,12 @@ import { useRouter } from "next/navigation";
 import MultiSelect from "@/components/MultiSelect";
 import { Campo, inputClass } from "@/components/cms/form-ui";
 import PeriodosEditor from "@/components/cms/PeriodosEditor";
+import HorarioPorDiaEditor from "@/components/cms/HorarioPorDiaEditor";
 import {
+  agruparPorHorario,
+  explodirPorDia,
   normalizarPeriodo,
+  pareceHorarioPorDia,
   resumoPeriodos,
   type PeriodoInput,
 } from "@/lib/horarios";
@@ -35,6 +39,7 @@ export default function HorariosEditor({
   outrosLocais,
   replicarIds,
   onReplicarChange,
+  permitirPorDia = false,
 }: {
   titulo: string;
   periods: PeriodoInput[];
@@ -45,8 +50,13 @@ export default function HorariosEditor({
   outrosLocais: { id: number; nome: string; sublabel?: string }[];
   replicarIds: number[];
   onReplicarChange: (ids: number[]) => void;
+  /** Oferece o modo "um horário para cada dia da semana". */
+  permitirPorDia?: boolean;
 }) {
   const router = useRouter();
+  const [porDia, setPorDia] = useState(
+    () => permitirPorDia && pareceHorarioPorDia(periods)
+  );
   const [modeloId, setModeloId] = useState("");
   const [nomeNovoModelo, setNomeNovoModelo] = useState("");
   const [mostrarSalvarModelo, setMostrarSalvarModelo] = useState(false);
@@ -54,18 +64,27 @@ export default function HorariosEditor({
   const [erroModelo, setErroModelo] = useState<string | null>(null);
   const [salvando, startSalvar] = useTransition();
 
+  // o horário escolhido entra no formato do editor que estiver em uso
+  function aplicar(periodos: PeriodoInput[]) {
+    const normalizados = periodos.map(normalizarPeriodo);
+    onChange(porDia ? explodirPorDia(normalizados) : normalizados);
+  }
+
   function aplicarModelo(id: string) {
     setModeloId(id);
     if (id === VALOR_ORGAO) {
-      if (horarioOrgao?.periodos.length) {
-        onChange(horarioOrgao.periodos.map(normalizarPeriodo));
-      }
+      if (horarioOrgao?.periodos.length) aplicar(horarioOrgao.periodos);
       return;
     }
     const modelo = modelos.find((m) => String(m.id) === id);
-    if (modelo?.periodos.length) {
-      onChange(modelo.periodos.map(normalizarPeriodo));
-    }
+    if (modelo?.periodos.length) aplicar(modelo.periodos);
+  }
+
+  // ao alternar o modo, os períodos já preenchidos são convertidos: explodidos
+  // em um item por dia, ou reagrupados por faixa de horário igual
+  function alternarPorDia(marcado: boolean) {
+    setPorDia(marcado);
+    onChange(marcado ? explodirPorDia(periods) : agruparPorHorario(periods));
   }
 
   function salvarModelo() {
@@ -119,7 +138,29 @@ export default function HorariosEditor({
         </Campo>
       </div>
 
-      <PeriodosEditor periods={periods} onChange={onChange} />
+      {permitirPorDia && (
+        <div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={porDia}
+              onChange={(e) => alternarPorDia(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-navy-800 focus:ring-navy-700"
+            />
+            O horário muda de acordo com o dia da semana?
+          </label>
+          <p className="ml-6 mt-0.5 text-xs text-slate-400">
+            Marque para informar um horário próprio para cada dia. Desmarcado, o
+            mesmo horário vale para todos os dias selecionados.
+          </p>
+        </div>
+      )}
+
+      {porDia ? (
+        <HorarioPorDiaEditor periods={periods} onChange={onChange} />
+      ) : (
+        <PeriodosEditor periods={periods} onChange={onChange} />
+      )}
 
       <div className="flex flex-wrap gap-4">
         <button
